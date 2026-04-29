@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_PROG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <PROGDIR>
+    <NAME>ZREPORTE_MATERIALES</NAME>
+    <DBAPL>S</DBAPL>
+    <DBNA>D$</DBNA>
+    <CLAS>O</CLAS>
+    <TYPE>1</TYPE>
+    <TITL>Reporte de Materiales</TITL>
+    <RSTAT>K</RSTAT>
+    <RMAND>1</RMAND>
+    <RLOAD>E</RLOAD>
+    <FIXPT>X</FIXPT>
+    <LDBNAME>D$S</LDBNAME>
+    <UCCHECK>X</UCCHECK>
+   </PROGDIR>
+   <TPOOL>
+    <item>
+     <ID>R</ID>
+     <ENTRY>Reporte de Materiales</ENTRY>
+     <LENGTH>22</LENGTH>
+    </item>
+   </TPOOL>
+   <TEXTELEMENTS>
+    <TTAB>
+     <item>
+      <NAME>001</NAME>
+      <ENTRY>Criterios de Selección</ENTRY>
+     </item>
+     <item>
+      <NAME>002</NAME>
+      <ENTRY>Reporte de Materiales</ENTRY>
+     </item>
+     <item>
+      <NAME>003</NAME>
+      <ENTRY>Fecha:</ENTRY>
+     </item>
+     <item>
+      <NAME>004</NAME>
+      <ENTRY>Hora:</ENTRY>
+     </item>
+     <item>
+      <NAME>005</NAME>
+      <ENTRY>Sociedad/Mandante:</ENTRY>
+     </item>
+    </TTAB>
+   </TEXTELEMENTS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
