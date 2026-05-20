@@ -1,0 +1,106 @@
+flowchart TB
+
+%% ============================================================
+%% FLOW 1 — PROGRAM STARTUP
+%% ============================================================
+subgraph FLOW1["FLOW 1 — PROGRAM STARTUP"]
+    direction TB
+    F1_A["User runs ZBCRE_FRAMEWORK_TEMPLATE\nSelection screen: MATNR, VDR_HEAT, VDR_CLNO, VDR_CD"]
+    F1_B["START-OF-SELECTION:\nCREATE OBJECT LO_FRAME\n(ZBCCL_GUI_TEMPLATE)"]
+    F1_C["LO_FRAME->SET_DATA_FROM_DB()\nLoads data from DB"]
+    F1_D["LO_FRAME->GET_ORDER_DATA_FOR_GUI()\nReturns WA_SCREEN_DATA"]
+    F1_E["ZBCFM_SET_SCREEN_DATA(WA_SCREEN_DATA)\nStores in Function Group (FG)"]
+    F1_F["Creates O_SCREEN (LCL_SCREEN)\nCalls SET_SCREEN_DATA"]
+    F1_G["SET_ORDER_INPUT(EDI_COILS)"]
+    F1_H["SET_HISTORY_SUMMARY(ALV_COILS)"]
+    F1_I["CALL SCREEN 100\nMain screen"]
+
+    F1_A --> F1_B --> F1_C --> F1_D --> F1_E --> F1_F
+    F1_F --> F1_G
+    F1_F --> F1_H
+    F1_G --> F1_I
+    F1_H --> F1_I
+end
+
+%% ============================================================
+%% FLOW 2 — SCREEN DISPLAY
+%% ============================================================
+subgraph FLOW2["FLOW 2 — SCREEN DISPLAY (FG: ZBCFG_FRAMEWORK_TEMPLATE)"]
+    direction TB
+    F2_A["Screen 100 — Main Screen"]
+    F2_B["PBO: STATUS_0100\nSET PF-STATUS 'SCREEN_100'\nButtons: Save Changes, Cancel"]
+    F2_C["Calls subscreen area\n→ Screen 0130"]
+    F2_D["Screen 0130 — Tabstrip (2 tabs)"]
+    F2_E["Tab 1 (R_TAB01)\n→ Subscreen 0140"]
+    F2_F["ALV 140-1\nOR_PSPEC_REST\nField SELECTED: editable"]
+    F2_G["Tab 2 (R_TAB03)\n→ Subscreen 0180"]
+    F2_H["ALV 180-1\nHISTORY_SUMMARY\nField HEAT_NO: editable\nField BATCH_NO: hotspot"]
+    F2_I["INITIALIZE_ALV '180-1'\nStructure: ZSAST_EDI_COILS_FCAT\nTable: HISTORY_SUMMARY\nHEAT_NO: EDIT = TRUE\nBATCH_NO: HOTSPOT = TRUE"]
+    F2_J@{ shape: stadium, label: "SET HANDLER HANDLE_HOTSPOT_CLICK_180_1\nFOR O_ALV_LIST_180_1\n⬡ KEY STEP" }
+
+    F2_A --> F2_B --> F2_C --> F2_D
+    F2_D --> F2_E --> F2_F
+    F2_D --> F2_G --> F2_H --> F2_I --> F2_J
+end
+
+%% ============================================================
+%% FLOW 3 — SAVE CHANGES
+%% ============================================================
+subgraph FLOW3["FLOW 3 — SAVE CHANGES"]
+    direction TB
+    F3_A["User edits HEAT_NO in ALV 180-1"]
+    F3_B["User clicks 'Save Changes' button"]
+    F3_C["PAI Screen 100:\nMODULE USER_COMMAND_0100\nSAVE_OK = 'SAVE'"]
+    F3_D["LCL_REPORT=>SAVE() called"]
+    F3_E["ZBCFM_GET_SCREEN_DATA() called"]
+    F3_F@{ shape: stadium, label: "O_ALV_LIST_180_1->CHECK_CHANGED_DATA()\n⬡ KEY STEP — flushes last edited cell\nto HISTORY_SUMMARY" }
+    F3_G["SCREEN_DATA-EDI_COILS = GET_ORDER_INPUT()"]
+    F3_H@{ shape: stadium, label: "SCREEN_DATA-ALV_COILS = HISTORY_SUMMARY\n⬡ KEY STEP" }
+    F3_I{e_valid = TRUE?}
+    F3_J["CREATE OBJECT O_ORDER (ZBCCL_GUI_TEMPLATE)\nif not already bound"]
+    F3_K["O_ORDER->SET_ORDER_DATA_FROM_GUI(WA_SCREEN_DATA)\n  MOVE-CORRESPONDING EDI_COILS\n  ME->ALV_COILS = P_SCREEN_DATA-ALV_COILS"]
+    F3_L["O_ORDER->SAVE()\n→ UPDATE_DATA_TO_DB()\n  MODIFY ZSATB_EDI_COILS FROM EDI_COILS"]
+    F3_M@{ shape: stadium, label: "LOOP AT ALV_COILS\n→ MODIFY ZSATB_EDI_COILS\n⬡ KEY STEP" }
+    F3_N["COMMIT WORK AND WAIT"]
+    F3_O["SET SCREEN 0 / LEAVE SCREEN"]
+    F3_P["Show validation error\nStay on screen"]
+
+    F3_A --> F3_B --> F3_C --> F3_D --> F3_E --> F3_F --> F3_G --> F3_H --> F3_I
+    F3_I -- "TRUE" --> F3_J --> F3_K --> F3_L --> F3_M --> F3_N --> F3_O
+    F3_I -- "FALSE" --> F3_P
+end
+
+%% ============================================================
+%% FLOW 4 — HOTSPOT CLICK
+%% ============================================================
+subgraph FLOW4["FLOW 4 — HOTSPOT CLICK (BATCH_NO in ALV 180-1)"]
+    direction TB
+    F4_A["User clicks BATCH_NO link in ALV 180-1"]
+    F4_B["CL_GUI_ALV_GRID fires HOTSPOT_CLICK event\n(client-side)"]
+    F4_C@{ shape: stadium, label: "SET HANDLER active → roundtrip to server\nPAI triggered\n⬡ KEY STEP — without SET HANDLER no roundtrip occurs" }
+    F4_D["HANDLE_HOTSPOT_CLICK_180_1 executes"]
+    F4_E["CHECK E_COLUMN_ID-FIELDNAME = 'BATCH_NO'"]
+    F4_F["READ TABLE HISTORY_SUMMARY\nINDEX ES_ROW_NO-ROW_ID\nINTO WA_HIST_SUMM"]
+    F4_G["SUBMIT ZBCRE_FRAMEWORK_TEMPLATE\nWITH MATNR / VDR_HEAT / VDR_CLNO / VDR_CD\nAND RETURN"]
+    F4_H["Program re-executes with clicked row's data"]
+    F4_I["AND RETURN → user returns to\ncurrent screen after closing drill-down"]
+
+    F4_A --> F4_B --> F4_C --> F4_D --> F4_E --> F4_F --> F4_G --> F4_H --> F4_I
+end
+
+%% ============================================================
+%% CROSS-FLOW LINKS
+%% ============================================================
+FLOW1 --> FLOW2
+FLOW2 --> FLOW3
+FLOW2 --> FLOW4
+
+%% ============================================================
+%% STYLES
+%% ============================================================
+classDef keyStep fill:#ff9900,stroke:#b36b00,color:#000,font-weight:bold
+classDef decision fill:#ddeeff,stroke:#336699,color:#000
+classDef default fill:#f5f5f5,stroke:#999,color:#000
+
+class F2_J,F3_F,F3_H,F3_M,F4_C keyStep
+class F3_I decision
