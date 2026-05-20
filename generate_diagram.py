@@ -105,15 +105,15 @@ bg.line.fill.background()
 
 # ── MAIN TITLE ────────────────────────────────────────────────────────────────
 add_box(slide, 0.3, 0.2, 19.4, 0.7,
-        'ZBCRE_FRAMEWORK_TEMPLATE — Flujo Completo del Proceso',
+        'ZBCRE_FRAMEWORK_TEMPLATE — Complete Process Flow',
         fill='#0D1B2A', border='#0D1B2A',
         font_size=18, bold=True, text_color='#FFFFFF')
 
 # ── LEGEND ────────────────────────────────────────────────────────────────────
-add_box(slide, 0.3, 1.05, 2.8, 0.35, 'Paso estándar',       fill='#EEF3FB', border='#336699', font_size=9)
-add_key_box(slide, 3.3, 1.05, 2.8, 0.35, '⬡ Paso clave')
-add_decision_box(slide, 6.3, 1.05, 2.8, 0.35, '◆ Decisión')
-add_box(slide, 9.3, 1.05, 4.5, 0.35, '→ Flecha de flujo  |  Naranja = punto crítico de implementación',
+add_box(slide, 0.3, 1.05, 2.8, 0.35, 'Standard step',      fill='#EEF3FB', border='#336699', font_size=9)
+add_key_box(slide, 3.3, 1.05, 2.8, 0.35, '⬡ Key step')
+add_decision_box(slide, 6.3, 1.05, 2.8, 0.35, '◆ Decision')
+add_box(slide, 9.3, 1.05, 4.5, 0.35, '→ Flow arrow  |  Orange = critical implementation point',
         fill='#F7F9FC', border='#CCCCCC', font_size=9)
 
 # =============================================================================
@@ -121,16 +121,16 @@ add_box(slide, 9.3, 1.05, 4.5, 0.35, '→ Flecha de flujo  |  Naranja = punto cr
 # =============================================================================
 COL_A = 1.0
 W     = 7.5
-add_section_label(slide, COL_A, 1.6, W, 0.4, 'FLOW 1 — ARRANQUE DEL PROGRAMA')
+add_section_label(slide, COL_A, 1.6, W, 0.4, 'FLOW 1 — PROGRAM STARTUP')
 
 steps_f1 = [
-    (1.9,  "Pantalla de selección\nMATNR · VDR_HEAT · VDR_CLNO · VDR_CD", 'step'),
+    (1.9,  "Selection screen\nMATNR · VDR_HEAT · VDR_CLNO · VDR_CD", 'step'),
     (2.8,  "START-OF-SELECTION\nCREATE OBJECT LO_FRAME  (ZBCCL_GUI_TEMPLATE)", 'step'),
-    (3.7,  "LO_FRAME->SET_DATA_FROM_DB()\nCarga datos desde base de datos", 'step'),
-    (4.6,  "LO_FRAME->GET_ORDER_DATA_FOR_GUI()\nRetorna WA_SCREEN_DATA", 'step'),
-    (5.5,  "ZBCFM_SET_SCREEN_DATA( WA_SCREEN_DATA )\nCrea O_SCREEN (LCL_SCREEN) en el Function Group", 'step'),
+    (3.7,  "LO_FRAME->SET_DATA_FROM_DB()\nLoads data from database", 'step'),
+    (4.6,  "LO_FRAME->GET_ORDER_DATA_FOR_GUI()\nReturns WA_SCREEN_DATA", 'step'),
+    (5.5,  "ZBCFM_SET_SCREEN_DATA( WA_SCREEN_DATA )\nCreates O_SCREEN (LCL_SCREEN) in the Function Group", 'step'),
     (6.4,  "SET_ORDER_INPUT( EDI_COILS )          SET_HISTORY_SUMMARY( ALV_COILS )", 'step'),
-    (7.3,  "CALL SCREEN 100  →  Pantalla principal", 'step'),
+    (7.3,  "CALL SCREEN 100  →  Main screen", 'step'),
 ]
 
 prev_y = None
@@ -145,15 +145,15 @@ for (y, txt, kind) in steps_f1:
 # =============================================================================
 COL_B = 10.5
 WB    = 8.5
-add_section_label(slide, COL_B, 1.6, WB, 0.4, 'FLOW 2 — DISPLAY DE SCREENS  (FG: ZBCFG_FRAMEWORK_TEMPLATE)')
+add_section_label(slide, COL_B, 1.6, WB, 0.4, 'FLOW 2 — SCREEN DISPLAY  (FG: ZBCFG_FRAMEWORK_TEMPLATE)')
 
 steps_f2 = [
-    (1.9,  "Screen 100 — Pantalla principal\nPBO: SET PF-STATUS 'SCREEN_100'  →  Botones: Save Changes · Cancel", 'step'),
-    (2.8,  "CALL SUBSCREEN  →  Screen 0130\nTabstrip con 2 tabs", 'step'),
-    (3.7,  "Tab 1 (R_TAB01)  →  Subscreen 0140\nALV 140-1  |  Tabla: OR_PSPEC_REST  |  Campo SELECTED: editable", 'step'),
-    (4.6,  "Tab 2 (R_TAB03)  →  Subscreen 0180\nALV 180-1  |  Tabla: HISTORY_SUMMARY\nHEAT_NO: editable  |  BATCH_NO: hotspot", 'step'),
-    (5.6,  "INITIALIZE_ALV '180-1'\nEstructura: ZSAST_EDI_COILS_FCAT  |  Tabla: HISTORY_SUMMARY\nHEAT_NO: EDIT=TRUE  |  BATCH_NO: HOTSPOT=TRUE", 'step'),
-    (6.65, "⬡  SET HANDLER HANDLE_HOTSPOT_CLICK_180_1\n      FOR O_ALV_LIST_180_1\nRegistra el evento — sin esto no hay roundtrip al servidor", 'key'),
+    (1.9,  "Screen 100 — Main screen\nPBO: SET PF-STATUS 'SCREEN_100'  →  Buttons: Save Changes · Cancel", 'step'),
+    (2.8,  "CALL SUBSCREEN  →  Screen 0130\nTabstrip with 2 tabs", 'step'),
+    (3.7,  "Tab 1 (R_TAB01)  →  Subscreen 0140\nALV 140-1  |  Table: OR_PSPEC_REST  |  Field SELECTED: editable", 'step'),
+    (4.6,  "Tab 2 (R_TAB03)  →  Subscreen 0180\nALV 180-1  |  Table: HISTORY_SUMMARY\nHEAT_NO: editable  |  BATCH_NO: hotspot", 'step'),
+    (5.6,  "INITIALIZE_ALV '180-1'\nStructure: ZSAST_EDI_COILS_FCAT  |  Table: HISTORY_SUMMARY\nHEAT_NO: EDIT=TRUE  |  BATCH_NO: HOTSPOT=TRUE", 'step'),
+    (6.65, "⬡  SET HANDLER HANDLE_HOTSPOT_CLICK_180_1\n      FOR O_ALV_LIST_180_1\nRegisters the event — without this no server roundtrip occurs", 'key'),
 ]
 
 prev_y = None
@@ -173,7 +173,7 @@ for (y, txt, kind) in steps_f2:
 # FLOW 3 — SAVE CHANGES   (col x≈1, y starts at 8.4)
 # =============================================================================
 Y3 = 8.6
-add_section_label(slide, 0.3, Y3, 19.4, 0.4, 'FLOW 3 — SAVE CHANGES  (botón en Screen 100)')
+add_section_label(slide, 0.3, Y3, 19.4, 0.4, 'FLOW 3 — SAVE CHANGES  (button on Screen 100)')
 
 CX   = 1.0
 WC   = 8.0
@@ -182,13 +182,13 @@ WC2  = 8.5
 
 # left column
 left_steps = [
-    (Y3+0.6,  "Usuario edita campo HEAT_NO en ALV 180-1", 'step'),
-    (Y3+1.45, "Usuario hace clic en 'Save Changes'", 'step'),
+    (Y3+0.6,  "User edits HEAT_NO field in ALV 180-1", 'step'),
+    (Y3+1.45, "User clicks 'Save Changes' button", 'step'),
     (Y3+2.3,  "PAI Screen 100: MODULE USER_COMMAND_0100\nSAVE_OK = 'SAVE'  →  CLEAR OK_CODE", 'step'),
-    (Y3+3.15, "LCL_REPORT=>SAVE() es invocado", 'step'),
-    (Y3+4.0,  "ZBCFM_GET_SCREEN_DATA() es invocado", 'step'),
-    (Y3+4.85, "⬡  O_ALV_LIST_180_1->CHECK_CHANGED_DATA()\nVuelca la última celda editada a HISTORY_SUMMARY\nSin esta llamada el último valor editado se pierde", 'key'),
-    (Y3+5.85, "⬡  SCREEN_DATA-ALV_COILS = HISTORY_SUMMARY\nIncluye los datos del ALV editable en el retorno", 'key'),
+    (Y3+3.15, "LCL_REPORT=>SAVE() is invoked", 'step'),
+    (Y3+4.0,  "ZBCFM_GET_SCREEN_DATA() is invoked", 'step'),
+    (Y3+4.85, "⬡  O_ALV_LIST_180_1->CHECK_CHANGED_DATA()\nFlushes the last edited cell into HISTORY_SUMMARY\nWithout this call the last edited value is lost", 'key'),
+    (Y3+5.85, "⬡  SCREEN_DATA-ALV_COILS = HISTORY_SUMMARY\nIncludes editable ALV data in the return value", 'key'),
     (Y3+6.7,  "SCREEN_DATA-EDI_COILS = GET_ORDER_INPUT()", 'step'),
 ]
 
@@ -212,12 +212,12 @@ add_arrow(slide, CX + WC/2, prev_y + 0.7, CX + WC/2, DY)
 
 # TRUE branch (right column)
 right_steps = [
-    (DY,      "CREATE OBJECT O_ORDER (ZBCCL_GUI_TEMPLATE)\nsi no está instanciado", 'step'),
+    (DY,      "CREATE OBJECT O_ORDER (ZBCCL_GUI_TEMPLATE)\nif not already instantiated", 'step'),
     (DY+0.9,  "O_ORDER->SET_ORDER_DATA_FROM_GUI( WA_SCREEN_DATA )\n  · MOVE-CORRESPONDING EDI_COILS\n  · ME->ALV_COILS = P_SCREEN_DATA-ALV_COILS", 'step'),
     (DY+1.9,  "O_ORDER->SAVE()  →  UPDATE_DATA_TO_DB()\n  · MODIFY ZSATB_EDI_COILS FROM EDI_COILS", 'step'),
-    (DY+2.8,  "⬡  LOOP AT ALV_COILS INTO WA_EDI_COILS\n      MODIFY ZSATB_EDI_COILS FROM WA_EDI_COILS\nPersiste cada fila editada del ALV", 'key'),
+    (DY+2.8,  "⬡  LOOP AT ALV_COILS INTO WA_EDI_COILS\n      MODIFY ZSATB_EDI_COILS FROM WA_EDI_COILS\nPersists each edited ALV row to database", 'key'),
     (DY+3.8,  "COMMIT WORK AND WAIT", 'step'),
-    (DY+4.6,  "SET SCREEN 0 / LEAVE SCREEN\nRegresa a la pantalla anterior", 'step'),
+    (DY+4.6,  "SET SCREEN 0 / LEAVE SCREEN\nReturns to the previous screen", 'step'),
 ]
 
 prev_y2 = None
@@ -240,7 +240,7 @@ add_box(slide, CX + WC + 0.05, DY + 0.05, 0.9, 0.28, 'TRUE', fill='#F7F9FC', bor
 # FALSE branch
 FY = DY + 1.0
 add_step_box(slide, CX, FY, WC, 0.6,
-             'Muestra error de validación\nEl usuario permanece en el screen')
+             'Validation error displayed\nUser remains on the screen')
 add_arrow(slide, CX + WC/2, DY + 0.7, CX + WC/2, FY)
 add_box(slide, CX + WC/2 + 0.05, DY + 0.72, 0.9, 0.24, 'FALSE', fill='#F7F9FC', border='#CCCCCC', font_size=8)
 
@@ -248,16 +248,16 @@ add_box(slide, CX + WC/2 + 0.05, DY + 0.72, 0.9, 0.24, 'FALSE', fill='#F7F9FC', 
 # FLOW 4 — HOTSPOT CLICK   (y starts after flow 3)
 # =============================================================================
 Y4 = DY + 5.6
-add_section_label(slide, 0.3, Y4, 19.4, 0.4, 'FLOW 4 — HOTSPOT CLICK  (columna BATCH_NO en ALV 180-1)')
+add_section_label(slide, 0.3, Y4, 19.4, 0.4, 'FLOW 4 — HOTSPOT CLICK  (BATCH_NO column in ALV 180-1)')
 
 hsteps = [
-    (0.3,  1.0,  Y4+0.6,  "Usuario hace clic en enlace BATCH_NO (CSI BatchNo)", 'step'),
-    (0.3,  1.0,  Y4+1.45, "CL_GUI_ALV_GRID dispara evento HOTSPOT_CLICK\n(evento del lado del cliente)", 'step'),
-    (0.3,  1.0,  Y4+2.35, "⬡  SET HANDLER activo  →  roundtrip al servidor\nPAI se activa  |  Sin SET HANDLER el evento muere en el cliente\ny /h nunca se activa", 'key'),
-    (0.3,  1.0,  Y4+3.35, "HANDLE_HOTSPOT_CLICK_180_1 se ejecuta\nCHECK E_COLUMN_ID-FIELDNAME = 'BATCH_NO'", 'step'),
+    (0.3,  1.0,  Y4+0.6,  "User clicks BATCH_NO link (CSI BatchNo)", 'step'),
+    (0.3,  1.0,  Y4+1.45, "CL_GUI_ALV_GRID fires HOTSPOT_CLICK event\n(client-side event)", 'step'),
+    (0.3,  1.0,  Y4+2.35, "⬡  SET HANDLER active  →  server roundtrip\nPAI is triggered  |  Without SET HANDLER the event dies on the client\nand /h never activates", 'key'),
+    (0.3,  1.0,  Y4+3.35, "HANDLE_HOTSPOT_CLICK_180_1 executes\nCHECK E_COLUMN_ID-FIELDNAME = 'BATCH_NO'", 'step'),
     (0.3,  1.0,  Y4+4.2,  "READ TABLE HISTORY_SUMMARY\nINDEX ES_ROW_NO-ROW_ID  INTO WA_HIST_SUMM", 'step'),
     (0.3,  1.0,  Y4+5.05, "SUBMIT ZBCRE_FRAMEWORK_TEMPLATE\n  WITH MATNR    = WA_HIST_SUMM-MATNR\n  WITH VDR_HEAT = WA_HIST_SUMM-HEAT_NO\n  WITH VDR_CLNO = WA_HIST_SUMM-COIL_NO\n  WITH VDR_CD   = WA_HIST_SUMM-VENDOR_CD\n  AND RETURN", 'step'),
-    (0.3,  1.0,  Y4+6.2,  "Programa se re-ejecuta con los datos de la fila clickeada\nAND RETURN → al cerrar, regresa al screen actual", 'step'),
+    (0.3,  1.0,  Y4+6.2,  "Program re-executes with the clicked row's data\nAND RETURN → on close, returns to the current screen", 'step'),
 ]
 
 CX3 = 1.0
@@ -277,6 +277,6 @@ for (_, __, y, txt, kind) in hsteps:
     prev_txt = txt
 
 # ── save ──────────────────────────────────────────────────────────────────────
-out = '/home/user/ABAPCloud/ZBCRE_FRAMEWORK_TEMPLATE_Flujo.pptx'
+out = '/home/user/ABAPCloud/ZBCRE_FRAMEWORK_TEMPLATE_Flow_EN.pptx'
 prs.save(out)
 print(f'Saved: {out}')
