@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_TRAN" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <transaction>
+    <TCODE>ZMM_LIB_OC</TCODE>
+    <PGMNA>ZRMM_LIBERACION_MASIVA_OC</PGMNA>
+    <DYPNO>1000</DYPNO>
+    <MENUE>Liberación masiva de OC</MENUE>
+    <MEN01/>
+    <AUTH/>
+    <CINFO>0</CINFO>
+    <STATU>0</STATU>
+    <AUTHEXACT>0</AUTHEXACT>
+    <S_TCD/>
+    <S_AUTH/>
+    <TSTCAT>
+     <PGMNA>ZRMM_LIBERACION_MASIVA_OC</PGMNA>
+     <DYPNO>1000</DYPNO>
+     <MENUE>Liberación masiva de OC</MENUE>
+     <MEN01/>
+     <CINFO>0</CINFO>
+    </TSTCAT>
+   </transaction>
+  </asx:values>
+ </asx:abap>
+</abapGit>

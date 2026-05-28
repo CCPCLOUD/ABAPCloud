@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_PROG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <PROGDIR>
+    <NAME>ZRMM_LIBERACION_MASIVA_OC</NAME>
+    <DBAPL>S</DBAPL>
+    <DBNA>D$</DBNA>
+    <CLAS>REPS</CLAS>
+    <TYPE>1</TYPE>
+    <TITLU>Liberación masiva de órdenes de compra</TITLU>
+    <VARCL>X</VARCL>
+    <BCSET/>
+    <AUHOR/>
+    <CNAM>DEVELOPER</CNAM>
+    <CDAT>20260305</CDAT>
+    <UNAM>DEVELOPER</UNAM>
+    <UDAT>20260305</UDAT>
+    <VERN>000001</VERN>
+    <LEVL>0</LEVL>
+    <RSTAT>K</RSTAT>
+    <RMAND/>
+    <RLOAD>E</RLOAD>
+    <FIXPT>X</FIXPT>
+    <SSET/>
+    <SDATE/>
+    <STIME/>
+    <IDATE/>
+    <ITIME/>
+    <ENPFG/>
+    <LDBPG/>
+    <ARCHD/>
+    <LSTUP>X</LSTUP>
+    <ABAP4/>
+    <APPL/>
+    <FMODE/>
+    <PKGED/>
+    <HNAM/>
+    <PROG/>
+    <SQLX/>
+    <EDTX/>
+    <UNAM2/>
+    <UDAT2/>
+    <UTIME2/>
+   </PROGDIR>
+   <TPOOL>
+    <item>
+     <ID>R</ID>
+     <ENTRY>Liberación masiva de órdenes de compra</ENTRY>
+     <LENGTH>40</LENGTH>
+    </item>
+    <item>
+     <ID>001</ID>
+     <ENTRY>Parámetros de carga</ENTRY>
+     <LENGTH>20</LENGTH>
+    </item>
+   </TPOOL>
+  </asx:values>
+ </asx:abap>
+</abapGit>
