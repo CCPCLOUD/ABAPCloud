@@ -276,9 +276,9 @@ FORM f_validar_oc
   DATA ls_ekko TYPE ekko.
 
   * Verificar existencia en EKKO
-  SELECT SINGLE ebeln, bukrs, ekorg, frgst, frgke, frgsx
+  SELECT SINGLE *
     FROM ekko
-    INTO @DATA(ls_oc)
+    INTO @ls_ekko
     WHERE ebeln = @pv_ebeln
       AND loekz = @space.
 
@@ -289,13 +289,12 @@ FORM f_validar_oc
     RETURN.
   ENDIF.
 
-  ps_log-bukrs = ls_oc-bukrs.
-  ps_log-ekorg = ls_oc-ekorg.
-  ps_log-frgst = ls_oc-frgst.
+  ps_log-bukrs = ls_ekko-bukrs.
+  ps_log-ekorg = ls_ekko-ekorg.
+  ps_log-frgst = ls_ekko-frgst.
 
   * Verificar que la OC no esté completamente liberada
-  * REL_INDICATOR 'V' o frgst = frgke indica liberación total
-  IF ls_oc-frgst = ls_oc-frgke.
+  IF ls_ekko-frgst = ls_ekko-frgke.
     ps_log-semaforo     = gc_amarillo.
     ps_log-estatus      = 'Advertencia'.
     ps_log-mensaje_func = |OC { pv_ebeln } ya se encuentra completamente liberada.|.
@@ -306,7 +305,7 @@ FORM f_validar_oc
   SELECT SINGLE frgco
     FROM t16fk
     INTO @DATA(lv_frgco_check)
-    WHERE frgsx = @ls_oc-frgsx
+    WHERE frgsx = @ls_ekko-frgsx
       AND frgco = @pv_frgco.
 
   IF sy-subrc <> 0.
