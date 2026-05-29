@@ -291,31 +291,17 @@ FORM f_validar_oc
 
   ps_log-bukrs = ls_ekko-bukrs.
   ps_log-ekorg = ls_ekko-ekorg.
-  ps_log-frgst = ls_ekko-frgst.
+  ps_log-frgst = ls_ekko-frgsx.   " Estrategia de liberación
 
-  * Verificar que la OC no esté completamente liberada
-  IF ls_ekko-frgst = ls_ekko-frgke.
+  * Verificar que la OC no esté completamente liberada (FRGKE = 'V' = liberada)
+  IF ls_ekko-frgke = 'V'.
     ps_log-semaforo     = gc_amarillo.
     ps_log-estatus      = 'Advertencia'.
     ps_log-mensaje_func = |OC { pv_ebeln } ya se encuentra completamente liberada.|.
     RETURN.
   ENDIF.
 
-  * Verificar que el código de liberación exista en la estrategia de la OC (T16FK)
-  SELECT SINGLE frgco
-    FROM t16fk
-    INTO @DATA(lv_frgco_check)
-    WHERE frgsx = @ls_ekko-frgsx
-      AND frgco = @pv_frgco.
-
-  IF sy-subrc <> 0.
-    ps_log-semaforo     = gc_rojo.
-    ps_log-estatus      = 'Error'.
-    ps_log-mensaje_func = |Código liberador { pv_frgco } no corresponde a la estrategia de la OC.|.
-    RETURN.
-  ENDIF.
-
-  * Si llegamos aquí, la OC es válida para intentar liberación
+  * La validación de código liberador y secuencia la realiza BAPI_PO_RELEASE
   ps_log-semaforo = gc_verde.
 ENDFORM.
 
