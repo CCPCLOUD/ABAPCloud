@@ -175,7 +175,7 @@ FORM f_procesar_archivo.
     * Normalizar orden de compra (ALPHA IN - rellenar con ceros a la izquierda)
     DATA lv_ebeln TYPE ebeln.
     lv_orden = CONV string( ls_raw-orden_compra ).
-    CONDENSE lv_order NO-GAPS.
+    CONDENSE lv_orden NO-GAPS.
     CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
       EXPORTING
         input  = ls_raw-orden_compra
