@@ -235,7 +235,7 @@ ENDFORM.
 *----------------------------------------------------------------------*
 * FORM: Validar encabezados del Excel
 *----------------------------------------------------------------------*
-FORM f_validar_encabezados USING pt_excel TYPE TABLE.
+FORM f_validar_encabezados USING pt_excel TYPE TABLE OF alsmex_tabline.
   DATA ls_line TYPE alsmex_tabline.
   DATA lv_col1 TYPE string.
   DATA lv_col2 TYPE string.
