@@ -276,7 +276,7 @@ FORM f_validar_oc
   DATA ls_ekko TYPE ekko.
 
   * Verificar existencia en EKKO
-  SELECT SINGLE ebeln bukrs ekorg frgst frgke
+  SELECT SINGLE ebeln, bukrs, ekorg, frgst, frgke, frgsx
     FROM ekko
     INTO @DATA(ls_oc)
     WHERE ebeln = @pv_ebeln
