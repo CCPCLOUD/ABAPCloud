@@ -57,8 +57,12 @@ SELECTION-SCREEN FUNCTION KEY 1.
 *----------------------------------------------------------------------*
 DATA:
   gt_log      TYPE tt_log,
-  gt_fieldcat TYPE slis_t_fieldcat_alv,
-  gs_layout   TYPE slis_layout_alv.
+  gt_fieldcat   TYPE slis_t_fieldcat_alv,
+  gs_layout     TYPE slis_layout_alv,
+  gv_procesados TYPE i,
+  gv_correctos  TYPE i,
+  gv_errores    TYPE i,
+  gv_simulados  TYPE i.
 
 *----------------------------------------------------------------------*
 * AT SELECTION-SCREEN OUTPUT
@@ -389,19 +393,16 @@ FORM f_mostrar_log.
     ls_fieldcat TYPE slis_fieldcat_alv,
     ls_layout   TYPE slis_layout_alv,
     ls_event    TYPE slis_alv_event,
-    lt_events   TYPE slis_t_event,
-    lv_correctos  TYPE i,
-    lv_errores    TYPE i,
-    lv_simulados  TYPE i,
-    lv_procesados TYPE i.
+    lt_events   TYPE slis_t_event.
 
-  * Calcular totales
+  * Calcular totales en variables globales (accesibles desde el footer)
+  CLEAR: gv_procesados, gv_correctos, gv_errores, gv_simulados.
   LOOP AT gt_log INTO DATA(ls_log_total).
-    lv_procesados = lv_procesados + 1.
+    gv_procesados = gv_procesados + 1.
     CASE ls_log_total-semaforo.
-      WHEN gc_verde.    lv_correctos  = lv_correctos  + 1.
-      WHEN gc_rojo.     lv_errores    = lv_errores    + 1.
-      WHEN gc_amarillo. lv_simulados  = lv_simulados  + 1.
+      WHEN gc_verde.    gv_correctos = gv_correctos + 1.
+      WHEN gc_rojo.     gv_errores   = gv_errores   + 1.
+      WHEN gc_amarillo. gv_simulados = gv_simulados + 1.
     ENDCASE.
   ENDLOOP.
 
@@ -440,11 +441,6 @@ FORM f_mostrar_log.
   ls_event-form    = 'F_ALV_FOOTER'.
   APPEND ls_event TO lt_events.
 
-  * Pasar totales a través de variables globales (usadas en footer)
-  SET PARAMETER ID 'ZMM_PROC' FIELD lv_procesados.
-  SET PARAMETER ID 'ZMM_OK'   FIELD lv_correctos.
-  SET PARAMETER ID 'ZMM_ERR'  FIELD lv_errores.
-  SET PARAMETER ID 'ZMM_SIM'  FIELD lv_simulados.
 
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
@@ -466,22 +462,13 @@ ENDFORM.
 FORM f_alv_footer USING pt_list_commentary TYPE slis_t_listheader
                         pa_ausgabe_info    TYPE char8.
   DATA:
-    ls_line      TYPE slis_listheader,
-    lv_procesados TYPE i,
-    lv_correctos  TYPE i,
-    lv_errores    TYPE i,
-    lv_simulados  TYPE i.
-
-  GET PARAMETER ID 'ZMM_PROC' FIELD lv_procesados.
-  GET PARAMETER ID 'ZMM_OK'   FIELD lv_correctos.
-  GET PARAMETER ID 'ZMM_ERR'  FIELD lv_errores.
-  GET PARAMETER ID 'ZMM_SIM'  FIELD lv_simulados.
+    ls_line TYPE slis_listheader.
 
   ls_line-typ  = 'S'.
   ls_line-key  = 'Procesados:'.
-  ls_line-info = |{ lv_procesados } | &
-                 |Correctos: { lv_correctos } | &
-                 |Errores: { lv_errores } | &
-                 |Simulados/Advertencias: { lv_simulados }|.
+  ls_line-info = |{ gv_procesados } | &
+                 |Correctos: { gv_correctos } | &
+                 |Errores: { gv_errores } | &
+                 |Simulados/Advertencias: { gv_simulados }|.
   APPEND ls_line TO pt_list_commentary.
 ENDFORM.
