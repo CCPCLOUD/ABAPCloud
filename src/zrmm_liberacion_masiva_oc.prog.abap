@@ -314,8 +314,8 @@ FORM f_ejecutar_bapi
   CHANGING ps_log   TYPE ty_log.
 
   DATA:
-    lv_rel_status    TYPE bapimepoheader-rel_status,
-    lv_rel_indicator TYPE bapimepoheader-rel_indicator,
+    lv_rel_status    TYPE c LENGTH 2,
+    lv_rel_indicator TYPE c LENGTH 1,
     lt_return        TYPE TABLE OF bapiret2,
     ls_return        TYPE bapiret2,
     lv_hay_error     TYPE abap_bool VALUE abap_false,
