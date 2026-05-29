@@ -10,6 +10,8 @@ REPORT zrmm_liberacion_masiva_oc.
 * TIPOS DE DATOS
 *----------------------------------------------------------------------*
 TYPES:
+  tt_excel TYPE STANDARD TABLE OF alsmex_tabline WITH DEFAULT KEY,
+
   BEGIN OF ty_excel_raw,
     orden_compra      TYPE c LENGTH 20,
     codigo_liberacion TYPE c LENGTH 10,
@@ -235,7 +237,7 @@ ENDFORM.
 *----------------------------------------------------------------------*
 * FORM: Validar encabezados del Excel
 *----------------------------------------------------------------------*
-FORM f_validar_encabezados USING pt_excel TYPE TABLE OF alsmex_tabline.
+FORM f_validar_encabezados USING pt_excel TYPE tt_excel.
   DATA ls_line TYPE alsmex_tabline.
   DATA lv_col1 TYPE string.
   DATA lv_col2 TYPE string.
