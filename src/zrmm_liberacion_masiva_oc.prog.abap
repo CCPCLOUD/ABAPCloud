@@ -391,7 +391,9 @@ FORM f_mostrar_log.
   DATA:
     lt_fieldcat TYPE slis_t_fieldcat_alv,
     ls_fieldcat TYPE slis_fieldcat_alv,
-    ls_layout   TYPE slis_layout_alv.
+    ls_layout   TYPE slis_layout_alv,
+    lt_events   TYPE slis_t_event,
+    ls_event    TYPE slis_alv_event.
 
   * Calcular totales en variables globales (accesibles desde el footer)
   CLEAR: gv_procesados, gv_correctos, gv_errores, gv_simulados.
@@ -434,26 +436,35 @@ FORM f_mostrar_log.
   add_field 'MENSAJE_FUNC'  'Mensaje funcional' 80 'L'.
   add_field 'MENSAJE_SAP'   'Mensaje SAP/BAPI' 220 'L'.
 
-  * Construir footer con totales para it_list_commentary
-  DATA lt_commentary TYPE slis_t_listheader.
-  DATA ls_line       TYPE slis_listheader.
+  * Evento footer — válido para REUSE_ALV_LIST_DISPLAY
+  ls_event-name = slis_ev_end_of_list.
+  ls_event-form = 'F_ALV_FOOTER'.
+  APPEND ls_event TO lt_events.
+
+  CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      it_fieldcat        = lt_fieldcat
+      is_layout          = ls_layout
+      it_events          = lt_events
+      i_save             = 'A'
+    TABLES
+      t_outtab           = gt_log
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+ENDFORM.
+
+*----------------------------------------------------------------------*
+* FORM: Footer ALV con totales (interfaz requerida por slis_ev_end_of_list)
+*----------------------------------------------------------------------*
+FORM f_alv_footer USING pt_list_commentary TYPE slis_t_listheader
+                        pa_ausgabe_info    TYPE char8.
+  DATA ls_line TYPE slis_listheader.
 
   ls_line-typ  = 'S'.
   ls_line-key  = 'Procesados:'.
   ls_line-info = |{ gv_procesados }  Correctos: { gv_correctos }  Errores: { gv_errores }  Simulados/Advert.: { gv_simulados }|.
-  APPEND ls_line TO lt_commentary.
-
-  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
-    EXPORTING
-      i_callback_program  = sy-repid
-      it_fieldcat         = lt_fieldcat
-      is_layout           = ls_layout
-      it_list_commentary  = lt_commentary
-      i_save              = 'A'
-    TABLES
-      t_outtab            = gt_log
-    EXCEPTIONS
-      program_error       = 1
-      OTHERS              = 2.
+  APPEND ls_line TO pt_list_commentary.
 ENDFORM.
 
