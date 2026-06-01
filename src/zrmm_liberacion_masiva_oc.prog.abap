@@ -86,6 +86,7 @@ AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
 START-OF-SELECTION.
   PERFORM f_validar_archivo.
   PERFORM f_procesar_archivo.
+  PERFORM f_agregar_fila_totales.
   PERFORM f_mostrar_log.
 
 *----------------------------------------------------------------------*
@@ -367,26 +368,35 @@ FORM f_ejecutar_bapi
 ENDFORM.
 
 *----------------------------------------------------------------------*
+* FORM: Agregar fila de totales al final del log
+*----------------------------------------------------------------------*
+FORM f_agregar_fila_totales.
+  DATA ls_total TYPE ty_log.
+
+  CLEAR: gv_procesados, gv_correctos, gv_errores, gv_simulados.
+  LOOP AT gt_log INTO DATA(ls_line).
+    gv_procesados = gv_procesados + 1.
+    CASE ls_line-semaforo.
+      WHEN gc_verde.    gv_correctos = gv_correctos + 1.
+      WHEN gc_rojo.     gv_errores   = gv_errores   + 1.
+      WHEN gc_amarillo. gv_simulados = gv_simulados + 1.
+    ENDCASE.
+  ENDLOOP.
+
+  ls_total-semaforo     = gc_amarillo.
+  ls_total-estatus      = 'TOTAL'.
+  ls_total-mensaje_func = |Procesados: { gv_procesados }  Correctos: { gv_correctos }  Errores: { gv_errores }  Simulados/Adv.: { gv_simulados }|.
+  APPEND ls_total TO gt_log.
+ENDFORM.
+
+*----------------------------------------------------------------------*
 * FORM: Mostrar log ALV con semáforo
 *----------------------------------------------------------------------*
 FORM f_mostrar_log.
   DATA:
     lt_fieldcat TYPE slis_t_fieldcat_alv,
     ls_fieldcat TYPE slis_fieldcat_alv,
-    ls_layout   TYPE slis_layout_alv,
-    lt_events   TYPE slis_t_event,
-    ls_event    TYPE slis_alv_event.
-
-  * Calcular totales en variables globales (accesibles desde el footer)
-  CLEAR: gv_procesados, gv_correctos, gv_errores, gv_simulados.
-  LOOP AT gt_log INTO DATA(ls_log_total).
-    gv_procesados = gv_procesados + 1.
-    CASE ls_log_total-semaforo.
-      WHEN gc_verde.    gv_correctos = gv_correctos + 1.
-      WHEN gc_rojo.     gv_errores   = gv_errores   + 1.
-      WHEN gc_amarillo. gv_simulados = gv_simulados + 1.
-    ENDCASE.
-  ENDLOOP.
+    ls_layout   TYPE slis_layout_alv.
 
   * Layout ALV
   ls_layout-colwidth_optimize = abap_true.
@@ -417,31 +427,16 @@ FORM f_mostrar_log.
   add_field 'MENSAJE_FUNC'  'Mensaje funcional' 80 'L'.
   add_field 'MENSAJE_SAP'   'Mensaje SAP/BAPI' 220 'L'.
 
-  ls_event-name = slis_ev_end_of_list.
-  ls_event-form = 'F_ALV_FOOTER'.
-  APPEND ls_event TO lt_events.
-
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
       i_callback_program = sy-repid
       it_fieldcat        = lt_fieldcat
       is_layout          = ls_layout
-      it_events          = lt_events
       i_save             = 'A'
     TABLES
       t_outtab           = gt_log
     EXCEPTIONS
       program_error      = 1
       OTHERS             = 2.
-ENDFORM.
-
-*----------------------------------------------------------------------*
-* FORM: Footer — para REUSE_ALV_GRID_DISPLAY end_of_list va sin params
-*----------------------------------------------------------------------*
-FORM f_alv_footer.
-  WRITE: / 'Procesados:', gv_procesados,
-           '  Correctos:', gv_correctos,
-           '  Errores:', gv_errores,
-           '  Simulados/Advertencias:', gv_simulados.
 ENDFORM.
 
