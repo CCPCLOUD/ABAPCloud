@@ -318,25 +318,17 @@ FORM f_ejecutar_bapi
   CHANGING ps_log   TYPE ty_log.
 
   DATA:
-    lv_rel_status    TYPE c LENGTH 2,
-    lv_rel_indicator TYPE c LENGTH 1,
-    lt_return        TYPE TABLE OF bapiret2,
-    ls_return        TYPE bapiret2,
-    lv_hay_error     TYPE abap_bool VALUE abap_false,
-    lv_mensaje       TYPE string.
+    lt_return    TYPE TABLE OF bapiret2,
+    ls_return    TYPE bapiret2,
+    lv_hay_error TYPE abap_bool VALUE abap_false,
+    lv_mensaje   TYPE string.
 
   CALL FUNCTION 'BAPI_PO_RELEASE'
     EXPORTING
-      purchaseorder  = pv_ebeln
-      po_rel_code    = pv_frgco
-    IMPORTING
-      rel_status     = lv_rel_status
-      rel_indicator  = lv_rel_indicator
+      purchaseorder = pv_ebeln
+      po_rel_code   = pv_frgco
     TABLES
-      return         = lt_return.
-
-  ps_log-rel_indicator = lv_rel_indicator.
-  ps_log-frgst         = lv_rel_status.
+      return        = lt_return.
 
   * Analizar mensajes de retorno
   LOOP AT lt_return INTO ls_return.
@@ -352,25 +344,15 @@ FORM f_ejecutar_bapi
 
   ps_log-mensaje_sap = lv_mensaje.
 
-  IF lv_hay_error = abap_false AND lv_rel_indicator = 'V'.
-    * Liberación exitosa - confirmar
+  IF lv_hay_error = abap_false.
+    * Sin errores — confirmar liberación
     CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
       EXPORTING
         wait = abap_true.
 
     ps_log-semaforo     = gc_verde.
     ps_log-estatus      = 'Éxito'.
-    ps_log-mensaje_func = |OC { pv_ebeln } liberada correctamente con código { pv_frgco }.|.
-
-  ELSEIF lv_hay_error = abap_false AND lv_rel_indicator <> 'V'.
-    * BAPI ejecutada sin error pero liberación parcial (más niveles pendientes)
-    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
-      EXPORTING
-        wait = abap_true.
-
-    ps_log-semaforo     = gc_verde.
-    ps_log-estatus      = 'Éxito'.
-    ps_log-mensaje_func = |Nivel { pv_frgco } liberado. OC { pv_ebeln } pendiente de niveles superiores.|.
+    ps_log-mensaje_func = |OC { pv_ebeln } liberada con código { pv_frgco }.|.
 
   ELSE.
     * Error en BAPI - revertir
@@ -431,7 +413,6 @@ FORM f_mostrar_log.
   add_field 'BUKRS'         'Sociedad'          6  'C'.
   add_field 'EKORG'         'Org. compras'      8  'C'.
   add_field 'FRGST'         'Estrategia'        8  'C'.
-  add_field 'REL_INDICATOR' 'Ind. lib.'         5  'C'.
   add_field 'ESTATUS'       'Estatus'          15  'L'.
   add_field 'MENSAJE_FUNC'  'Mensaje funcional' 80 'L'.
   add_field 'MENSAJE_SAP'   'Mensaje SAP/BAPI' 220 'L'.
