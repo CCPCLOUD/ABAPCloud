@@ -417,20 +417,12 @@ FORM f_mostrar_log.
   add_field 'MENSAJE_FUNC'  'Mensaje funcional' 80 'L'.
   add_field 'MENSAJE_SAP'   'Mensaje SAP/BAPI' 220 'L'.
 
-  * Título del ALV con resumen de totales (visible siempre en cabecera)
-  DATA lv_title TYPE lvc_title.
-  lv_title = |Procesados: { gv_procesados } | &
-             |  Correctos: { gv_correctos } | &
-             |  Errores: { gv_errores } | &
-             |  Simulados/Advertencias: { gv_simulados }|.
-
   CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
     EXPORTING
       i_callback_program = sy-repid
       it_fieldcat        = lt_fieldcat
       is_layout          = ls_layout
       it_events          = lt_events
-      i_grid_title       = lv_title
       i_save             = 'A'
     TABLES
       t_outtab           = gt_log
