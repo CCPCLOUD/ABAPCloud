@@ -627,35 +627,54 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
+    " ALV Cabecera: resumen por Tabla de Asignación generada
     TRY.
-        DATA(lt_binding) = VALUE salv_t_hierseq_binding_info(
-          ( level1 = 'GROUP_ID' level2 = 'GROUP_ID' ) ).
-
-        cl_salv_hierseq_table=>factory(
-          EXPORTING
-            t_binding_level1_level2 = lt_binding
+        cl_salv_table=>factory(
           IMPORTING
-            r_hierseq                = DATA(lo_alv)
+            r_salv_table = DATA(lo_alv_header)
           CHANGING
-            t_table                  = result_hdr
-            t_table2                 = result_det ).
+            t_table      = result_hdr ).
 
-        DATA(lo_header_cols) = lo_alv->get_columns( )->get_level1_columns( ).
-        DATA(lo_detail_cols) = lo_alv->get_columns( )->get_level2_columns( ).
-
-        lo_header_cols->set_optimize( abap_true ).
-        lo_detail_cols->set_optimize( abap_true ).
+        lo_alv_header->get_columns( )->set_optimize( abap_true ).
+        lo_alv_header->get_functions( )->set_all( abap_true ).
 
         TRY.
-            lo_header_cols->get_column( 'GROUP_ID' )->set_technical( abap_true ).
-            lo_detail_cols->get_column( 'GROUP_ID' )->set_technical( abap_true ).
+            lo_alv_header->get_columns( )->get_column( 'GROUP_ID' )->set_technical( abap_true ).
           CATCH cx_salv_not_found.
         ENDTRY.
 
-        lo_alv->display( ).
+        lo_alv_header->get_display_settings( )->set_list_header( 'Resumen por Tabla de Asignación' ).
 
-      CATCH cx_root INTO DATA(lx_error).
-        MESSAGE |No fue posible mostrar el resultado: { lx_error->get_text( ) }|
+        lo_alv_header->display( ).
+
+      CATCH cx_root INTO DATA(lx_header_error).
+        MESSAGE |No fue posible mostrar el resumen: { lx_header_error->get_text( ) }|
+          TYPE 'I' DISPLAY LIKE 'E'.
+        RETURN.
+    ENDTRY.
+
+    " ALV Detalle: resultado por cada registro procesado
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table = DATA(lo_alv_detail)
+          CHANGING
+            t_table      = result_det ).
+
+        lo_alv_detail->get_columns( )->set_optimize( abap_true ).
+        lo_alv_detail->get_functions( )->set_all( abap_true ).
+
+        TRY.
+            lo_alv_detail->get_columns( )->get_column( 'GROUP_ID' )->set_technical( abap_true ).
+          CATCH cx_salv_not_found.
+        ENDTRY.
+
+        lo_alv_detail->get_display_settings( )->set_list_header( 'Detalle por Registro' ).
+
+        lo_alv_detail->display( ).
+
+      CATCH cx_root INTO DATA(lx_detail_error).
+        MESSAGE |No fue posible mostrar el detalle: { lx_detail_error->get_text( ) }|
           TYPE 'I' DISPLAY LIKE 'E'.
     ENDTRY.
 
