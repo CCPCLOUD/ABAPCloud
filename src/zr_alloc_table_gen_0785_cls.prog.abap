@@ -117,6 +117,13 @@ CLASS lcl_alloc_table_gen DEFINITION.
     "! Despliega el ALV de 2 niveles (cabecera / detalle) con el resultado final.
     METHODS display_results.
 
+    "! Convierte un mensaje devuelto por WRF_AT_GENERATE_ALLOCATION en texto legible.
+    METHODS get_message_text
+      IMPORTING
+        i_message TYPE symsg
+      RETURNING
+        VALUE(r_text) TYPE string.
+
 ENDCLASS.
 
 
@@ -474,71 +481,145 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ENDIF.
 
     " -----------------------------------------------------------------------
-    " Construcción de la cabecera y posiciones para WRF_AT_GENERATE_ALLOCATION.
-    " Los nombres de estructuras/parámetros deben confirmarse en SE37 contra
-    " la versión instalada (ver sección "Información técnica" de la EF D136A).
+    " Construcción del "pedido virtual" (estructuras tipo EKKO/EKPO/EKET)
+    " requerido por WRF_AT_GENERATE_ALLOCATION, según firma confirmada en
+    " SE37 (ver EF D136A, "Información técnica").
+    "
+    " EBELN es un identificador interno generado por este programa (no
+    " corresponde a un documento de compras real) y se usa únicamente para
+    " correlacionar las posiciones enviadas con ET_REFERENCES al recibir
+    " el resultado.
     " -----------------------------------------------------------------------
     DATA(ls_first_line) = i_lines[ 1 ].
+    DATA(lv_ebeln) = |{ i_group_id WIDTH = 10 ALIGN = RIGHT PAD = '0' }|.
 
-    DATA ls_fm_header TYPE wrf_at_header.
-    DATA lt_fm_items  TYPE wrf_at_item_tt.
-    DATA lv_alloc_no  TYPE wrf_at_alloc_no.
-    DATA lt_return    TYPE bapiret2_t.
+    DATA lt_ekko_ok    TYPE wrf_ekko_ok_tty.
+    DATA lt_ekpo       TYPE wrf_at_ekpo_tty.
+    DATA lt_eket       TYPE wrf_at_eket_tty.
+    DATA lt_po_data    TYPE wrf_po_data_tty.
+    DATA lt_messages   TYPE tsmesg.
+    DATA lt_references TYPE wrf_references_tty.
+    DATA lv_lines_actual TYPE i.
+    DATA lv_last_abeln   TYPE abeln.
 
-    ls_fm_header-lifnr = ls_first_line-lifnr.     " Supplier
-    ls_fm_header-ekorg = ls_first_line-ekorg.     " Purchasing Organization
-    ls_fm_header-ekgrp = ls_first_line-ekgrp.     " Purchasing Group
-    ls_fm_header-werks = ls_first_line-werks_sup. " Supply Plant
-    ls_fm_header-eindt = ls_first_line-eindt.     " Valid From
+    APPEND VALUE #( ebeln = lv_ebeln
+                    fixpo = abap_false
+                    lifnr = ls_first_line-lifnr ) TO lt_ekko_ok.
 
     LOOP AT i_lines INTO DATA(ls_item_line).
-      APPEND VALUE #( matnr = ls_item_line-matnr
+
+      DATA(lv_ebelp) = CONV ebelp( sy-tabix * 10 ).
+
+      APPEND VALUE #( ebeln = lv_ebeln
+                      ebelp = lv_ebelp
+                      matnr = ls_item_line-matnr
                       werks = ls_item_line-werks_rec
                       menge = ls_item_line-menge
-                      meins = ls_item_line-meins ) TO lt_fm_items.
+                      meins = ls_item_line-meins ) TO lt_ekpo.
+
+      APPEND VALUE #( ebeln = lv_ebeln
+                      ebelp = lv_ebelp
+                      etenr = '0001'
+                      eindt = ls_item_line-eindt
+                      menge = ls_item_line-menge ) TO lt_eket.
+
+      APPEND VALUE #( ebeln    = lv_ebeln
+                      ebelp    = lv_ebelp
+                      lifnr    = ls_item_line-lifnr
+                      matnr    = ls_item_line-matnr
+                      eindt    = ls_item_line-eindt
+                      ekorg    = ls_item_line-ekorg
+                      ekgrp    = ls_item_line-ekgrp
+                      dc       = ls_item_line-werks_sup
+                      act_quan = ls_item_line-menge
+                      unit     = ls_item_line-meins
+                      act_unit = ls_item_line-meins
+                      aurel    = abap_true ) TO lt_po_data.
+
     ENDLOOP.
+
+    " ---------------------------------------------------------------------
+    " Parámetros de configuración del FM (tipo de Tabla de Asignación,
+    " estrategia de asignación, etc.). Se utilizan valores "dummy" como
+    " marcador de posición: deben confirmarse/ajustarse en Diseño Técnico
+    " contra la configuración real (T620 y customizing de Tablas de
+    " Asignación) del sistema destino.
+    " ---------------------------------------------------------------------
+    CONSTANTS: gc_aufar TYPE aufar     VALUE '01',
+               gc_astra TYPE astra     VALUE '01',
+               gc_astva TYPE astra_var VALUE '01',
+               gc_aufme TYPE wrf_aufme VALUE 'EA'.
+
+    DATA ls_t620 TYPE t620.
 
     CALL FUNCTION 'WRF_AT_GENERATE_ALLOCATION'
       EXPORTING
-        is_header        = ls_fm_header
-        it_items         = lt_fm_items
+        it_po_data       = lt_po_data
+        it_ekko_ok       = lt_ekko_ok
+        it_eket          = lt_eket
+        it_ekpo          = lt_ekpo
+        i_t620           = ls_t620
+        i_aufar          = gc_aufar
+        i_astra          = gc_astra
+        i_astva          = gc_astva
+        i_aufme          = gc_aufme
+        i_hk_cb          = abap_false
+        i_po_cb          = abap_false
       IMPORTING
-        e_alloc_table_no = lv_alloc_no
-      TABLES
-        et_return        = lt_return.
+        et_collected_msg = lt_messages
+        e_lines_actual   = lv_lines_actual
+        et_references    = lt_references
+        e_last_abeln     = lv_last_abeln.
 
     DATA(lv_has_error) = abap_false.
-    LOOP AT lt_return INTO DATA(ls_return) WHERE type = 'E' OR type = 'A'.
+    LOOP AT lt_messages INTO DATA(ls_error_msg) WHERE msgty = 'E' OR msgty = 'A'.
       lv_has_error = abap_true.
       EXIT.
     ENDLOOP.
 
-    IF lv_has_error = abap_false.
-      c_header-alloc_table  = lv_alloc_no.
-      c_header-status       = 'Exitosa'.
-      c_header-success_recs = c_header-total_recs.
-      c_header-error_recs   = 0.
-    ELSE.
-      c_header-status       = 'Error'.
-      c_header-success_recs = 0.
-      c_header-error_recs   = c_header-total_recs.
-    ENDIF.
-
     DATA(lv_message_text) = COND string(
-      WHEN lt_return IS NOT INITIAL THEN lt_return[ 1 ]-message
+      WHEN lt_messages IS NOT INITIAL THEN get_message_text( lt_messages[ 1 ] )
       WHEN lv_has_error = abap_false THEN 'Generado correctamente'
       ELSE 'Error desconocido al generar la Tabla de Asignación' ).
 
+    IF lv_has_error = abap_false AND lv_last_abeln IS NOT INITIAL.
+      c_header-alloc_table = lv_last_abeln.
+      c_header-status      = 'Exitosa'.
+    ELSE.
+      c_header-status      = 'Error'.
+    ENDIF.
+
     LOOP AT i_lines INTO DATA(ls_result_line).
-      APPEND VALUE ty_result_detail(
-        group_id    = i_group_id
-        alloc_table = c_header-alloc_table
-        matnr       = ls_result_line-matnr
-        werks_rec   = ls_result_line-werks_rec
-        menge       = ls_result_line-menge
-        meins       = ls_result_line-meins
-        result      = COND char6( WHEN lv_has_error = abap_false THEN 'OK' ELSE 'ERROR' )
-        message     = lv_message_text ) TO c_details.
+
+      DATA(lv_result_ebelp) = CONV ebelp( sy-tabix * 10 ).
+
+      READ TABLE lt_references INTO DATA(ls_reference)
+        WITH KEY ebeln = lv_ebeln ebelp = lv_result_ebelp.
+
+      IF sy-subrc = 0 AND lv_has_error = abap_false.
+        APPEND VALUE ty_result_detail(
+          group_id    = i_group_id
+          alloc_table = ls_reference-abeln
+          matnr       = ls_result_line-matnr
+          werks_rec   = ls_result_line-werks_rec
+          menge       = ls_result_line-menge
+          meins       = ls_result_line-meins
+          result      = 'OK'
+          message     = lv_message_text ) TO c_details.
+        c_header-success_recs = c_header-success_recs + 1.
+      ELSE.
+        APPEND VALUE ty_result_detail(
+          group_id    = i_group_id
+          alloc_table = COND #( WHEN sy-subrc = 0 THEN ls_reference-abeln ELSE space )
+          matnr       = ls_result_line-matnr
+          werks_rec   = ls_result_line-werks_rec
+          menge       = ls_result_line-menge
+          meins       = ls_result_line-meins
+          result      = 'ERROR'
+          message     = lv_message_text ) TO c_details.
+        c_header-error_recs = c_header-error_recs + 1.
+      ENDIF.
+
     ENDLOOP.
 
   ENDMETHOD.
@@ -577,6 +658,15 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         MESSAGE |No fue posible mostrar el resultado: { lx_error->get_text( ) }|
           TYPE 'I' DISPLAY LIKE 'E'.
     ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_message_text.
+
+    MESSAGE ID i_message-msgid TYPE i_message-msgty NUMBER i_message-msgno
+      WITH i_message-msgv1 i_message-msgv2 i_message-msgv3 i_message-msgv4
+      INTO r_text.
 
   ENDMETHOD.
 
