@@ -80,14 +80,6 @@ CLASS lcl_alloc_table_gen DEFINITION.
     METHODS upload_excel
       RETURNING VALUE(r_success) TYPE abap_bool.
 
-    "! Convierte una línea de texto (celdas separadas por tabulador) a ty_excel_row.
-    METHODS parse_excel_line
-      IMPORTING
-        i_row_num TYPE i
-        i_line    TYPE string
-      RETURNING
-        VALUE(r_row) TYPE ty_excel_row.
-
     "! Ejecuta todas las validaciones funcionales sobre excel_data.
     METHODS validate_data.
 
@@ -166,96 +158,85 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA lt_raw_data TYPE solix_tab.
-    DATA lv_size     TYPE i.
-    DATA lv_xstring  TYPE xstring.
-    DATA lt_lines    TYPE truxs_t_text_data.
+    " Columnas esperadas del layout (ver EF D136A):
+    " 1 Proveedor | 2 Fecha Entrega | 3 Org. Compras | 4 Grupo de Compras |
+    " 5 Centro Suministrador | 6 Material | 7 Centro Destino | 8 Cantidad | 9 UoM
+    CONSTANTS: c_first_col TYPE i VALUE 1,
+               c_last_col  TYPE i VALUE 9,
+               c_first_row TYPE i VALUE 2,
+               c_last_row  TYPE i VALUE 99999.
 
-    cl_gui_frontend_services=>gui_upload(
+    DATA lt_excel TYPE TABLE OF alsmex_tabline.
+
+    CALL FUNCTION 'ALSM_EXCEL_TO_INTERNAL_TABLE'
       EXPORTING
-        filename   = file_path
-        filetype   = 'BIN'
-      IMPORTING
-        filelength = lv_size
-      CHANGING
-        data_tab   = lt_raw_data
+        filename                = file_path
+        i_begin_col             = c_first_col
+        i_begin_row             = c_first_row
+        i_end_col               = c_last_col
+        i_end_row               = c_last_row
+      TABLES
+        intern                  = lt_excel
       EXCEPTIONS
-        OTHERS     = 1 ).
+        inconsistent_parameters = 1
+        upload_ole              = 2
+        OTHERS                  = 3.
 
     IF sy-subrc <> 0.
-      MESSAGE 'No fue posible leer el archivo seleccionado' TYPE 'I' DISPLAY LIKE 'E'.
+      MESSAGE 'El archivo no tiene un formato Excel válido o no fue posible leerlo'
+        TYPE 'I' DISPLAY LIKE 'E'.
       RETURN.
     ENDIF.
 
-    TRY.
-        lv_xstring = cl_bcs_convert=>solix_to_xstring(
-                        it_solix = lt_raw_data
-                        iv_size  = lv_size ).
-
-        DATA(lo_excel) = NEW cl_fdt_xl_spreadsheet(
-                                document_name = file_path
-                                xdocument     = lv_xstring ).
-
-        DATA(lt_worksheets) = lo_excel->if_fdt_doc_spreadsheet~get_worksheet_names( ).
-
-        lo_excel->if_fdt_doc_spreadsheet~get_itab_from_worksheet(
-          EXPORTING
-            worksheet = lt_worksheets[ 1 ]
-          IMPORTING
-            itab      = lt_lines ).
-
-      CATCH cx_root INTO DATA(lx_error).
-        MESSAGE |El archivo no tiene un formato Excel válido: { lx_error->get_text( ) }|
-          TYPE 'I' DISPLAY LIKE 'E'.
-        RETURN.
-    ENDTRY.
-
-    IF lines( lt_lines ) < 2.
+    IF lt_excel IS INITIAL.
       MESSAGE 'El archivo no contiene registros para procesar' TYPE 'I' DISPLAY LIKE 'E'.
       RETURN.
     ENDIF.
 
-    " La primera línea es el encabezado de columnas (se omite)
-    LOOP AT lt_lines INTO DATA(lv_line) FROM 2.
-      APPEND parse_excel_line( i_row_num = sy-tabix - 1
-                                i_line    = lv_line ) TO excel_data.
+    SORT lt_excel BY row col.
+
+    LOOP AT lt_excel INTO DATA(ls_cell).
+
+      AT NEW row.
+        APPEND VALUE ty_excel_row( row_num = ls_cell-row - ( c_first_row - 1 ) ) TO excel_data.
+      ENDAT.
+
+      ASSIGN excel_data[ lines( excel_data ) ] TO FIELD-SYMBOL(<fs_row>).
+
+      CASE ls_cell-col.
+        WHEN 1.
+          <fs_row>-lifnr = ls_cell-value.
+        WHEN 2.
+          " Fecha de Entrega: formato DD/MM/AAAA
+          IF strlen( ls_cell-value ) = 10.
+            <fs_row>-eindt = |{ ls_cell-value+6(4) }{ ls_cell-value+3(2) }{ ls_cell-value+0(2) }|.
+          ENDIF.
+        WHEN 3.
+          <fs_row>-ekorg = ls_cell-value.
+        WHEN 4.
+          <fs_row>-ekgrp = ls_cell-value.
+        WHEN 5.
+          <fs_row>-werks_sup = ls_cell-value.
+        WHEN 6.
+          <fs_row>-matnr = ls_cell-value.
+        WHEN 7.
+          <fs_row>-werks_rec = ls_cell-value.
+        WHEN 8.
+          " Cantidad: admite coma o punto como separador decimal
+          DATA(lv_qty_text) = ls_cell-value.
+          REPLACE ALL OCCURRENCES OF ',' IN lv_qty_text WITH '.'.
+          TRY.
+              <fs_row>-menge = lv_qty_text.
+            CATCH cx_root.
+              CLEAR <fs_row>-menge.
+          ENDTRY.
+        WHEN 9.
+          <fs_row>-meins = ls_cell-value.
+      ENDCASE.
+
     ENDLOOP.
 
     r_success = abap_true.
-
-  ENDMETHOD.
-
-
-  METHOD parse_excel_line.
-
-    SPLIT i_line AT cl_abap_char_utilities=>horizontal_tab INTO TABLE DATA(lt_fields).
-
-    r_row-row_num = i_row_num.
-
-    r_row-lifnr     = COND lifnr(     WHEN lines( lt_fields ) >= 1 THEN lt_fields[ 1 ] ).
-    r_row-ekorg     = COND ekorg(     WHEN lines( lt_fields ) >= 3 THEN lt_fields[ 3 ] ).
-    r_row-ekgrp     = COND ekgrp(     WHEN lines( lt_fields ) >= 4 THEN lt_fields[ 4 ] ).
-    r_row-werks_sup = COND werks_d(   WHEN lines( lt_fields ) >= 5 THEN lt_fields[ 5 ] ).
-    r_row-matnr     = COND matnr(     WHEN lines( lt_fields ) >= 6 THEN lt_fields[ 6 ] ).
-    r_row-werks_rec = COND werks_d(   WHEN lines( lt_fields ) >= 7 THEN lt_fields[ 7 ] ).
-    r_row-meins     = COND meins(     WHEN lines( lt_fields ) >= 9 THEN lt_fields[ 9 ] ).
-
-    " Fecha de Entrega: formato DD/MM/AAAA
-    IF lines( lt_fields ) >= 2 AND strlen( lt_fields[ 2 ] ) = 10.
-      DATA(lv_date_text) = lt_fields[ 2 ].
-      r_row-eindt = |{ lv_date_text+6(4) }{ lv_date_text+3(2) }{ lv_date_text+0(2) }|.
-    ENDIF.
-
-    " Cantidad: admite coma o punto como separador decimal
-    IF lines( lt_fields ) >= 8.
-      DATA(lv_qty_text) = lt_fields[ 8 ].
-      REPLACE ALL OCCURRENCES OF ',' IN lv_qty_text WITH '.'.
-      TRY.
-          r_row-menge = lv_qty_text.
-        CATCH cx_root.
-          CLEAR r_row-menge.
-      ENDTRY.
-    ENDIF.
 
   ENDMETHOD.
 
