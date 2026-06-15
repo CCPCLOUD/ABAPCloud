@@ -120,7 +120,7 @@ CLASS lcl_alloc_table_gen DEFINITION.
     "! Convierte un mensaje devuelto por WRF_AT_GENERATE_ALLOCATION en texto legible.
     METHODS get_message_text
       IMPORTING
-        i_message TYPE symsg
+        i_message TYPE smesg
       RETURNING
         VALUE(r_text) TYPE string.
 
@@ -664,9 +664,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD get_message_text.
 
-    MESSAGE ID i_message-msgid TYPE i_message-msgty NUMBER i_message-msgno
-      WITH i_message-msgv1 i_message-msgv2 i_message-msgv3 i_message-msgv4
-      INTO r_text.
+    r_text = i_message-text.
 
   ENDMETHOD.
 
