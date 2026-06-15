@@ -1,7 +1,10 @@
-CLASS zcl_alloc_table_gen_0785 DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
+*&---------------------------------------------------------------------*
+*& Include          ZR_ALLOC_TABLE_GEN_0785_CLS
+*& Clase local: lógica de generación masiva de Tablas de Asignación
+*& Referencia: EF D136A - Tablas de Asignación
+*&---------------------------------------------------------------------*
+
+CLASS lcl_alloc_table_gen DEFINITION.
 
   PUBLIC SECTION.
 
@@ -126,7 +129,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_alloc_table_gen_0785 IMPLEMENTATION.
+CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD constructor.
     file_path  = i_file_path.

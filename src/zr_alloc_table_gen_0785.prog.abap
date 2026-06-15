@@ -5,16 +5,8 @@
 *&---------------------------------------------------------------------*
 REPORT zr_alloc_table_gen_0785.
 
-SELECTION-SCREEN BEGIN OF BLOCK b01 WITH FRAME TITLE TEXT-001.
-
-PARAMETERS: p_file TYPE string LOWER CASE OBLIGATORY.
-
-SELECTION-SCREEN SKIP.
-
-PARAMETERS: p_sim  RADIOBUTTON GROUP rb1 DEFAULT 'X', " Simulación
-            p_real RADIOBUTTON GROUP rb1.             " Ejecución Real
-
-SELECTION-SCREEN END OF BLOCK b01.
+INCLUDE zr_alloc_table_gen_0785_top.   " Pantalla de selección
+INCLUDE zr_alloc_table_gen_0785_cls.   " Clase local LCL_ALLOC_TABLE_GEN
 
 
 AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
@@ -43,7 +35,7 @@ START-OF-SELECTION.
 
   DATA(lv_simulation) = COND abap_bool( WHEN p_sim = abap_true THEN abap_true ELSE abap_false ).
 
-  NEW zcl_alloc_table_gen_0785(
+  NEW lcl_alloc_table_gen(
     i_file_path  = p_file
     i_simulation = lv_simulation
   )->process( ).
