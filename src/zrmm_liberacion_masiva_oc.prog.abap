@@ -324,12 +324,22 @@ FORM f_ejecutar_bapi
     lv_hay_error TYPE abap_bool VALUE abap_false,
     lv_mensaje   TYPE string.
 
-  CALL FUNCTION 'BAPI_PO_RELEASE'
-    EXPORTING
-      purchaseorder = pv_ebeln
-      po_rel_code   = pv_frgco
-    TABLES
-      return        = lt_return.
+  TRY.
+      CALL FUNCTION 'BAPI_PO_RELEASE'
+        EXPORTING
+          purchaseorder = pv_ebeln
+          po_rel_code   = pv_frgco
+        TABLES
+          return        = lt_return.
+
+    CATCH cx_root INTO DATA(lx_error).
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      ps_log-semaforo     = gc_rojo.
+      ps_log-estatus      = 'Error'.
+      ps_log-mensaje_func = |Error inesperado al liberar OC { pv_ebeln }.|.
+      ps_log-mensaje_sap  = lx_error->get_text( ).
+      RETURN.
+  ENDTRY.
 
   * Analizar mensajes de retorno
   LOOP AT lt_return INTO ls_return.
