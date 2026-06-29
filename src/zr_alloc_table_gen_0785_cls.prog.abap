@@ -606,10 +606,12 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
       master = 'GROUP_ID'
       slave  = 'GROUP_ID' ) TO lt_binding.
 
+    DATA lo_hierseq TYPE REF TO cl_salv_hierseq_table.
+
     TRY.
         cl_salv_hierseq_table=>factory(
-          EXPORTING
-            r_salv_hierseq_table = DATA(lo_hierseq)
+          IMPORTING
+            r_salv_hierseq_table = lo_hierseq
           CHANGING
             t_binding_info       = lt_binding
             t_outtab_header      = result_hdr
