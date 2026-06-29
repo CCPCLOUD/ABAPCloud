@@ -539,7 +539,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         im_t_rfc_alloc_stores_in = lt_stores.
 
     " Capturar el mensaje exacto devuelto por el FM (sy-msg* tras la llamada RFC)
-    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgnr
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
       WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 INTO lv_msg_text.
 
     " -----------------------------------------------------------------------
