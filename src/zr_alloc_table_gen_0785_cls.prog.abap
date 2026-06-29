@@ -387,7 +387,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
     LOOP AT lt_sorted INTO DATA(ls_row).
 
-      lv_curr_key = |{ ls_row-lifnr }|{ ls_row-eindt }|{ ls_row-ekorg }|.
+      lv_curr_key = ls_row-lifnr && ls_row-eindt && ls_row-ekorg.
 
       IF lv_curr_key <> lv_prev_key.
         ls_first     = ls_row.
