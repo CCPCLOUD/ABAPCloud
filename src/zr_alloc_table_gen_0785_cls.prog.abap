@@ -421,38 +421,57 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     DATA(lt_sorted) = excel_data.
     SORT lt_sorted BY lifnr eindt ekorg.
 
+    " Recolectar claves únicas de agrupación (Proveedor / Fecha Entrega / Org. Compras)
+    TYPES: BEGIN OF ty_group_key,
+             lifnr TYPE lifnr,
+             eindt TYPE dats,
+             ekorg TYPE ekorg,
+           END OF ty_group_key.
+
+    DATA lt_keys TYPE TABLE OF ty_group_key WITH EMPTY KEY.
+
+    LOOP AT lt_sorted INTO DATA(ls_scan).
+      IF NOT line_exists( lt_keys[ lifnr = ls_scan-lifnr
+                                   eindt = ls_scan-eindt
+                                   ekorg = ls_scan-ekorg ] ).
+        APPEND VALUE ty_group_key( lifnr = ls_scan-lifnr
+                                   eindt = ls_scan-eindt
+                                   ekorg = ls_scan-ekorg ) TO lt_keys.
+      ENDIF.
+    ENDLOOP.
+
+    " Por cada clave única, filtrar todas las líneas del grupo y generar la tabla
     DATA lv_group_id TYPE i VALUE 0.
-    DATA lt_group_lines TYPE ty_excel_rows.
 
-    LOOP AT lt_sorted INTO DATA(ls_row).
+    LOOP AT lt_keys INTO DATA(ls_key).
 
-      AT NEW ekorg.
-        lv_group_id = lv_group_id + 1.
-        CLEAR lt_group_lines.
-      ENDAT.
+      lv_group_id = lv_group_id + 1.
 
-      APPEND ls_row TO lt_group_lines.
+      DATA(lt_group_lines) = VALUE ty_excel_rows(
+        FOR ls IN lt_sorted
+        WHERE ( lifnr = ls_key-lifnr
+            AND eindt = ls_key-eindt
+            AND ekorg = ls_key-ekorg )
+        ( ls ) ).
 
-      AT END OF ekorg.
-        DATA(ls_header) = VALUE ty_result_header(
-          group_id = lv_group_id
-          lifnr    = ls_row-lifnr
-          eindt    = ls_row-eindt
-          ekorg    = ls_row-ekorg ).
+      DATA(ls_header) = VALUE ty_result_header(
+        group_id = lv_group_id
+        lifnr    = ls_key-lifnr
+        eindt    = ls_key-eindt
+        ekorg    = ls_key-ekorg ).
 
-        DATA(lt_details) = VALUE ty_result_details( ).
+      DATA(lt_details) = VALUE ty_result_details( ).
 
-        generate_allocation_table(
-          EXPORTING
-            i_group_id = lv_group_id
-            i_lines    = lt_group_lines
-          CHANGING
-            c_header   = ls_header
-            c_details  = lt_details ).
+      generate_allocation_table(
+        EXPORTING
+          i_group_id = lv_group_id
+          i_lines    = lt_group_lines
+        CHANGING
+          c_header   = ls_header
+          c_details  = lt_details ).
 
-        APPEND ls_header TO result_hdr.
-        APPEND LINES OF lt_details TO result_det.
-      ENDAT.
+      APPEND ls_header TO result_hdr.
+      APPEND LINES OF lt_details TO result_det.
 
     ENDLOOP.
 
