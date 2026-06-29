@@ -600,22 +600,9 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
+    " ── ALV Cabecera: Resumen por Tabla de Asignación ────────────────────
     TRY.
-        " Pantalla dividida: cabecera (40%) arriba, detalle (60%) abajo
-        DATA(lo_splitter) = NEW cl_gui_splitter_container(
-          parent  = cl_gui_container=>default_screen
-          rows    = 2
-          columns = 1 ).
-
-        lo_splitter->set_row_height( id = 1 height = 40 ).
-        lo_splitter->set_row_height( id = 2 height = 60 ).
-
-        DATA(lo_top)    = lo_splitter->get_container( row = 1 column = 1 ).
-        DATA(lo_bottom) = lo_splitter->get_container( row = 2 column = 1 ).
-
-        " ── ALV Cabecera ──────────────────────────────────────────────────
         cl_salv_table=>factory(
-          EXPORTING r_container  = lo_top
           IMPORTING r_salv_table = DATA(lo_hdr)
           CHANGING  t_table      = result_hdr ).
 
@@ -624,21 +611,26 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         lo_hdr->get_display_settings( )->set_list_header( 'Resumen por Tabla de Asignación' ).
 
         DATA(lo_hdr_cols) = lo_hdr->get_columns( ).
-        TRY. lo_hdr_cols->get_column( 'GROUP_ID' )->set_technical( abap_true ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'LIFNR'       )->set_long_text( 'Proveedor'             ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'EINDT'       )->set_long_text( 'Fecha Entrega'          ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'EKORG'       )->set_long_text( 'Org. Compras'           ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de Asignación'    ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'TOTAL_RECS'  )->set_long_text( 'Total Registros'        ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'SUCCESS_RECS')->set_long_text( 'Exitosos'               ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'ERROR_RECS'  )->set_long_text( 'Errores'                ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'STATUS'      )->set_long_text( 'Estatus'                ). CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'LIFNR'       )->set_long_text( 'Proveedor' ).        CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'EINDT'       )->set_long_text( 'Fecha Entrega' ).    CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'EKORG'       )->set_long_text( 'Org. Compras' ).     CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla Asignación' ). CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'TOTAL_RECS'  )->set_long_text( 'Total Registros' ).  CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'SUCCESS_RECS')->set_long_text( 'Exitosos' ).         CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'ERROR_RECS'  )->set_long_text( 'Errores' ).          CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_hdr_cols->get_column( 'STATUS'      )->set_long_text( 'Estatus' ).          CATCH cx_salv_not_found. ENDTRY.
 
         lo_hdr->display( ).
 
-        " ── ALV Detalle ───────────────────────────────────────────────────
+      CATCH cx_root INTO DATA(lx_hdr).
+        MESSAGE |Error al mostrar resumen: { lx_hdr->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
+        RETURN.
+    ENDTRY.
+
+    " ── ALV Detalle: Resultado por Registro ──────────────────────────────
+    TRY.
         cl_salv_table=>factory(
-          EXPORTING r_container  = lo_bottom
           IMPORTING r_salv_table = DATA(lo_det)
           CHANGING  t_table      = result_det ).
 
@@ -647,23 +639,19 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         lo_det->get_display_settings( )->set_list_header( 'Detalle por Registro' ).
 
         DATA(lo_det_cols) = lo_det->get_columns( ).
-        TRY. lo_det_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).           CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de Asignación' ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MATNR'       )->set_long_text( 'Material'             ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'WERKS_REC'   )->set_long_text( 'Centro Destino'       ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MENGE'       )->set_long_text( 'Cantidad'             ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MEINS'       )->set_long_text( 'Unidad de Medida'     ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'RESULT'      )->set_long_text( 'Resultado'            ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MESSAGE'     )->set_long_text( 'Mensaje SAP'          ). CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla Asignación' ). CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'MATNR'       )->set_long_text( 'Material' ).         CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'WERKS_REC'   )->set_long_text( 'Centro Destino' ).   CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'MENGE'       )->set_long_text( 'Cantidad' ).         CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'MEINS'       )->set_long_text( 'Unidad de Medida' ). CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'RESULT'      )->set_long_text( 'Resultado' ).        CATCH cx_salv_not_found. ENDTRY.
+        TRY. lo_det_cols->get_column( 'MESSAGE'     )->set_long_text( 'Mensaje SAP' ).      CATCH cx_salv_not_found. ENDTRY.
 
         lo_det->display( ).
 
-        " Disparar la pantalla de lista para que el splitter sea visible
-        WRITE space.
-
-      CATCH cx_root INTO DATA(lx).
-        MESSAGE |No fue posible mostrar los resultados: { lx->get_text( ) }|
-          TYPE 'I' DISPLAY LIKE 'E'.
+      CATCH cx_root INTO DATA(lx_det).
+        MESSAGE |Error al mostrar detalle: { lx_det->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
     ENDTRY.
 
   ENDMETHOD.
