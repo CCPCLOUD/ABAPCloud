@@ -208,7 +208,10 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
       CASE ls_cell-col.
         WHEN 1.
-          <fs_row>-lifnr = ls_cell-value.
+          " LIFNR: agregar ceros a la izquierda (ej. 2000507 → 0002000507)
+          CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+            EXPORTING input  = ls_cell-value
+            IMPORTING output = <fs_row>-lifnr.
         WHEN 2.
           " Fecha de Entrega: formato DD/MM/AAAA
           IF strlen( ls_cell-value ) = 10.
@@ -221,7 +224,10 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         WHEN 5.
           <fs_row>-werks_sup = ls_cell-value.
         WHEN 6.
-          <fs_row>-matnr = ls_cell-value.
+          " MATNR: agregar ceros a la izquierda (ej. 1000683002 → 000001000683002)
+          CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+            EXPORTING input  = ls_cell-value
+            IMPORTING output = <fs_row>-matnr.
         WHEN 7.
           <fs_row>-werks_rec = ls_cell-value.
         WHEN 8.
