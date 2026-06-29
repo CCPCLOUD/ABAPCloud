@@ -173,11 +173,13 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
                c_first_row TYPE i VALUE 2,
                c_last_row  TYPE i VALUE 99999.
 
-    DATA lt_excel TYPE TABLE OF alsmex_tabline.
+    DATA lt_excel    TYPE TABLE OF alsmex_tabline.
+    DATA lv_filename TYPE rlgrap-filename.
+    lv_filename = file_path.
 
     CALL FUNCTION 'ALSM_EXCEL_TO_INTERNAL_TABLE'
       EXPORTING
-        filename                = file_path
+        filename                = lv_filename
         i_begin_col             = c_first_col
         i_begin_row             = c_first_row
         i_end_col               = c_last_col
