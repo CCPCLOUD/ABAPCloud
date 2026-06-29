@@ -378,14 +378,21 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     " Dentro de una misma clave de agrupación (Proveedor / Fecha Entrega / Org. Compras),
     " el Grupo de Compras y el Centro Suministrador deben ser únicos, ya que la cabecera
     " de la Tabla de Asignación solo admite un valor para cada uno.
+    DATA ls_first    TYPE ty_excel_row.
+    DATA lv_prev_key TYPE string.
+    DATA lv_curr_key TYPE string.
+
     DATA(lt_sorted) = excel_data.
     SORT lt_sorted BY lifnr eindt ekorg.
 
     LOOP AT lt_sorted INTO DATA(ls_row).
 
-      AT NEW ekorg.
-        DATA(ls_first) = ls_row.
-      ENDAT.
+      lv_curr_key = |{ ls_row-lifnr }|{ ls_row-eindt }|{ ls_row-ekorg }|.
+
+      IF lv_curr_key <> lv_prev_key.
+        ls_first     = ls_row.
+        lv_prev_key  = lv_curr_key.
+      ENDIF.
 
       IF ls_row-ekgrp <> ls_first-ekgrp OR ls_row-werks_sup <> ls_first-werks_sup.
         add_validation_error(
