@@ -117,12 +117,6 @@ CLASS lcl_alloc_table_gen DEFINITION.
     "! Despliega el ALV de 2 niveles (cabecera / detalle) con el resultado final.
     METHODS display_results.
 
-    "! Extrae el texto del primer mensaje de error devuelto por el FM.
-    METHODS get_message_text
-      IMPORTING
-        it_messages TYPE rfc_alloc_messages_out_tty
-      RETURNING
-        VALUE(r_text) TYPE string.
 
 ENDCLASS.
 
@@ -530,20 +524,18 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     " -----------------------------------------------------------------------
     DATA lv_alloc_table   TYPE abeln.
     DATA lv_return_code   TYPE sysubrc.
-    DATA lt_messages      TYPE rfc_alloc_messages_out_tty.
 
     CALL FUNCTION 'RFC_CREATE_ALLOCATION_TABLE_S4'
       EXPORTING
-        im_simulation           = CONV flag( COND #( WHEN simulation = abap_true THEN 'X' ELSE ' ' ) )
+        im_simulation            = CONV flag( COND #( WHEN simulation = abap_true THEN 'X' ELSE ' ' ) )
         im_s_rfc_alloc_header_in = ls_header
-        iv_prio_vendor          = ls_first-lifnr
+        iv_prio_vendor           = ls_first-lifnr
       IMPORTING
-        ex_alloc_table          = lv_alloc_table
-        ex_return_code          = lv_return_code
+        ex_alloc_table           = lv_alloc_table
+        ex_return_code           = lv_return_code
       TABLES
         im_t_rfc_alloc_items_in  = lt_items
-        im_t_rfc_alloc_stores_in = lt_stores
-        ex_alloc_messages        = lt_messages.
+        im_t_rfc_alloc_stores_in = lt_stores.
 
     " -----------------------------------------------------------------------
     " Construcción del resultado: cabecera y detalle por línea
@@ -553,7 +545,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     DATA(lv_msg_text) = COND string(
       WHEN lv_success = abap_true AND simulation = abap_false THEN 'Generado correctamente'
       WHEN lv_success = abap_true AND simulation = abap_true  THEN 'Simulación correcta'
-      ELSE get_message_text( lt_messages ) ).
+      ELSE |Error al generar la tabla (código { lv_return_code }). Consulte ST22 para el detalle.| ).
 
     IF lv_success = abap_true.
       c_header-alloc_table  = lv_alloc_table.
@@ -637,30 +629,5 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_message_text.
-
-    IF it_messages IS INITIAL.
-      r_text = 'Error desconocido al generar la Tabla de Asignación'.
-      RETURN.
-    ENDIF.
-
-    " Intentar leer campo de texto del primer mensaje via field-symbol genérico
-    DATA(ls_first_msg) = it_messages[ 1 ].
-
-    ASSIGN COMPONENT 'MESSAGE' OF STRUCTURE ls_first_msg TO FIELD-SYMBOL(<text>).
-    IF sy-subrc = 0.
-      r_text = <text>.
-      RETURN.
-    ENDIF.
-
-    ASSIGN COMPONENT 'TEXT' OF STRUCTURE ls_first_msg TO <text>.
-    IF sy-subrc = 0.
-      r_text = <text>.
-      RETURN.
-    ENDIF.
-
-    r_text = 'Error al generar la Tabla de Asignación (ver EX_ALLOC_MESSAGES en debug)'.
-
-  ENDMETHOD.
 
 ENDCLASS.
