@@ -600,55 +600,57 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    " Enlace cabecera ↔ detalle por GROUP_ID
-    DATA lt_binding TYPE salv_t_hierseq_binding.
-    APPEND VALUE salv_s_hierseq_binding(
-      master = 'GROUP_ID'
-      slave  = 'GROUP_ID' ) TO lt_binding.
+    DATA lt_fieldcat TYPE slis_t_fieldcat_alv.
+    DATA ls_fc       TYPE slis_fieldcat_alv.
+    DATA ls_keyinfo  TYPE slis_keyinfo_alv.
+    DATA ls_layout   TYPE slis_layout_alv.
 
-    DATA lo_hierseq TYPE REF TO cl_salv_hierseq_table.
+    " ── Field catalog cabecera (tabname = 'HDR') ─────────────────────
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'GROUP_ID'.    ls_fc-no_out   = 'X'.                                APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'LIFNR'.       ls_fc-seltext_l = 'Proveedor'.        ls_fc-col_pos = 1.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'EINDT'.       ls_fc-seltext_l = 'Fecha Entrega'.    ls_fc-col_pos = 2.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'EKORG'.       ls_fc-seltext_l = 'Org. Compras'.     ls_fc-col_pos = 3.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla Asignacion'. ls_fc-col_pos = 4.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'TOTAL_RECS'.  ls_fc-seltext_l = 'Total Registros'.  ls_fc-col_pos = 5.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'SUCCESS_RECS'.ls_fc-seltext_l = 'Exitosos'.         ls_fc-col_pos = 6.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'ERROR_RECS'.  ls_fc-seltext_l = 'Errores'.          ls_fc-col_pos = 7.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'STATUS'.      ls_fc-seltext_l = 'Estatus'.          ls_fc-col_pos = 8.  APPEND ls_fc TO lt_fieldcat.
 
-    TRY.
-        cl_salv_hierseq_table=>factory(
-          IMPORTING
-            r_salv_hierseq_table = lo_hierseq
-          CHANGING
-            t_binding_info       = lt_binding
-            t_outtab_header      = result_hdr
-            t_outtab_item        = result_det ).
+    " ── Field catalog detalle (tabname = 'DET') ──────────────────────
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'GROUP_ID'.    ls_fc-no_out   = 'X'.                                APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla Asignacion'. ls_fc-col_pos = 1.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.         ls_fc-col_pos = 2.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'WERKS_REC'.   ls_fc-seltext_l = 'Centro Destino'.   ls_fc-col_pos = 3.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MENGE'.       ls_fc-seltext_l = 'Cantidad'.         ls_fc-col_pos = 4.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MEINS'.       ls_fc-seltext_l = 'Unidad de Medida'. ls_fc-col_pos = 5.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'RESULT'.      ls_fc-seltext_l = 'Resultado'.        ls_fc-col_pos = 6.  APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MESSAGE'.     ls_fc-seltext_l = 'Mensaje SAP'.      ls_fc-col_pos = 7.  APPEND ls_fc TO lt_fieldcat.
 
-        lo_hierseq->get_functions( )->set_all( abap_true ).
+    " ── Enlace cabecera ↔ detalle por GROUP_ID ───────────────────────
+    ls_keyinfo-header01 = 'GROUP_ID'.
+    ls_keyinfo-item01   = 'GROUP_ID'.
 
-        " ── Columnas de cabecera ────────────────────────────────────────
-        DATA(lo_hdr_cols) = lo_hierseq->get_columns_header( ).
-        lo_hdr_cols->set_optimize( abap_true ).
-        TRY. lo_hdr_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'LIFNR'       )->set_long_text( 'Proveedor' ).        CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'EINDT'       )->set_long_text( 'Fecha Entrega' ).    CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'EKORG'       )->set_long_text( 'Org. Compras' ).     CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla Asignación' ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'TOTAL_RECS'  )->set_long_text( 'Total Registros' ).  CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'SUCCESS_RECS')->set_long_text( 'Exitosos' ).         CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'ERROR_RECS'  )->set_long_text( 'Errores' ).          CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_hdr_cols->get_column( 'STATUS'      )->set_long_text( 'Estatus' ).          CATCH cx_salv_not_found. ENDTRY.
+    ls_layout-zebra          = abap_true.
+    ls_layout-colwidth_optimize = abap_true.
 
-        " ── Columnas de detalle ─────────────────────────────────────────
-        DATA(lo_det_cols) = lo_hierseq->get_columns_item( ).
-        lo_det_cols->set_optimize( abap_true ).
-        TRY. lo_det_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla Asignación' ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MATNR'       )->set_long_text( 'Material' ).         CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'WERKS_REC'   )->set_long_text( 'Centro Destino' ).   CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MENGE'       )->set_long_text( 'Cantidad' ).         CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MEINS'       )->set_long_text( 'Unidad de Medida' ). CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'RESULT'      )->set_long_text( 'Resultado' ).        CATCH cx_salv_not_found. ENDTRY.
-        TRY. lo_det_cols->get_column( 'MESSAGE'     )->set_long_text( 'Mensaje SAP' ).      CATCH cx_salv_not_found. ENDTRY.
+    CALL FUNCTION 'REUSE_ALV_HIERSEQ_LIST_DISPLAY'
+      EXPORTING
+        i_callback_program = sy-repid
+        i_tabname_header   = 'HDR'
+        i_tabname_item     = 'DET'
+        is_keyinfo         = ls_keyinfo
+        it_fieldcat        = lt_fieldcat
+        is_layout          = ls_layout
+      TABLES
+        t_outtab_header    = result_hdr
+        t_outtab_item      = result_det
+      EXCEPTIONS
+        program_error      = 1
+        OTHERS             = 2.
 
-        lo_hierseq->display( ).
-
-      CATCH cx_salv_error INTO DATA(lx).
-        MESSAGE |Error al mostrar resultados: { lx->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
-    ENDTRY.
+    IF sy-subrc <> 0.
+      MESSAGE 'Error al mostrar los resultados del ALV' TYPE 'I' DISPLAY LIKE 'E'.
+    ENDIF.
 
   ENDMETHOD.
 
