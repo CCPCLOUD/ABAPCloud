@@ -600,17 +600,26 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    " ── ALV Cabecera: Resumen por Tabla de Asignación ────────────────────
+    " Enlace cabecera ↔ detalle por GROUP_ID
+    DATA lt_binding TYPE salv_t_hierseq_binding.
+    APPEND VALUE salv_s_hierseq_binding(
+      master = 'GROUP_ID'
+      slave  = 'GROUP_ID' ) TO lt_binding.
+
     TRY.
-        cl_salv_table=>factory(
-          IMPORTING r_salv_table = DATA(lo_hdr)
-          CHANGING  t_table      = result_hdr ).
+        cl_salv_hierseq_table=>factory(
+          EXPORTING
+            r_salv_hierseq_table = DATA(lo_hierseq)
+          CHANGING
+            t_binding_info       = lt_binding
+            t_outtab_header      = result_hdr
+            t_outtab_item        = result_det ).
 
-        lo_hdr->get_columns( )->set_optimize( abap_true ).
-        lo_hdr->get_functions( )->set_all( abap_true ).
-        lo_hdr->get_display_settings( )->set_list_header( 'Resumen por Tabla de Asignación' ).
+        lo_hierseq->get_functions( )->set_all( abap_true ).
 
-        DATA(lo_hdr_cols) = lo_hdr->get_columns( ).
+        " ── Columnas de cabecera ────────────────────────────────────────
+        DATA(lo_hdr_cols) = lo_hierseq->get_columns_header( ).
+        lo_hdr_cols->set_optimize( abap_true ).
         TRY. lo_hdr_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_hdr_cols->get_column( 'LIFNR'       )->set_long_text( 'Proveedor' ).        CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_hdr_cols->get_column( 'EINDT'       )->set_long_text( 'Fecha Entrega' ).    CATCH cx_salv_not_found. ENDTRY.
@@ -621,24 +630,9 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         TRY. lo_hdr_cols->get_column( 'ERROR_RECS'  )->set_long_text( 'Errores' ).          CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_hdr_cols->get_column( 'STATUS'      )->set_long_text( 'Estatus' ).          CATCH cx_salv_not_found. ENDTRY.
 
-        lo_hdr->display( ).
-
-      CATCH cx_root INTO DATA(lx_hdr).
-        MESSAGE |Error al mostrar resumen: { lx_hdr->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
-        RETURN.
-    ENDTRY.
-
-    " ── ALV Detalle: Resultado por Registro ──────────────────────────────
-    TRY.
-        cl_salv_table=>factory(
-          IMPORTING r_salv_table = DATA(lo_det)
-          CHANGING  t_table      = result_det ).
-
-        lo_det->get_columns( )->set_optimize( abap_true ).
-        lo_det->get_functions( )->set_all( abap_true ).
-        lo_det->get_display_settings( )->set_list_header( 'Detalle por Registro' ).
-
-        DATA(lo_det_cols) = lo_det->get_columns( ).
+        " ── Columnas de detalle ─────────────────────────────────────────
+        DATA(lo_det_cols) = lo_hierseq->get_columns_item( ).
+        lo_det_cols->set_optimize( abap_true ).
         TRY. lo_det_cols->get_column( 'GROUP_ID'    )->set_technical( abap_true ).          CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_det_cols->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla Asignación' ). CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_det_cols->get_column( 'MATNR'       )->set_long_text( 'Material' ).         CATCH cx_salv_not_found. ENDTRY.
@@ -648,10 +642,10 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         TRY. lo_det_cols->get_column( 'RESULT'      )->set_long_text( 'Resultado' ).        CATCH cx_salv_not_found. ENDTRY.
         TRY. lo_det_cols->get_column( 'MESSAGE'     )->set_long_text( 'Mensaje SAP' ).      CATCH cx_salv_not_found. ENDTRY.
 
-        lo_det->display( ).
+        lo_hierseq->display( ).
 
-      CATCH cx_root INTO DATA(lx_det).
-        MESSAGE |Error al mostrar detalle: { lx_det->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
+      CATCH cx_salv_error INTO DATA(lx).
+        MESSAGE |Error al mostrar resultados: { lx->get_text( ) }| TYPE 'I' DISPLAY LIKE 'E'.
     ENDTRY.
 
   ENDMETHOD.
