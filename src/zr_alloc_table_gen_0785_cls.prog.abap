@@ -138,11 +138,6 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
     validate_data( ).
 
-    IF val_errors IS NOT INITIAL.
-      show_validation_errors( ).
-      RETURN.
-    ENDIF.
-
     process_groups( ).
 
     display_results( ).
@@ -206,33 +201,36 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
       ASSIGN excel_data[ lines( excel_data ) ] TO FIELD-SYMBOL(<fs_row>).
 
+      DATA(lv_val) = ls_cell-value.
+      CONDENSE lv_val.
+
       CASE ls_cell-col.
         WHEN 1.
           " LIFNR: agregar ceros a la izquierda (ej. 2000507 → 0002000507)
           CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
-            EXPORTING input  = ls_cell-value
+            EXPORTING input  = lv_val
             IMPORTING output = <fs_row>-lifnr.
         WHEN 2.
-          " Fecha de Entrega: formato DD/MM/AAAA
-          IF strlen( ls_cell-value ) = 10.
-            <fs_row>-eindt = |{ ls_cell-value+6(4) }{ ls_cell-value+3(2) }{ ls_cell-value+0(2) }|.
+          " Fecha de Entrega: formato DD/MM/AAAA o DD.MM.AAAA
+          IF strlen( lv_val ) = 10.
+            <fs_row>-eindt = |{ lv_val+6(4) }{ lv_val+3(2) }{ lv_val+0(2) }|.
           ENDIF.
         WHEN 3.
-          <fs_row>-ekorg = ls_cell-value.
+          <fs_row>-ekorg = lv_val.
         WHEN 4.
-          <fs_row>-ekgrp = ls_cell-value.
+          <fs_row>-ekgrp = lv_val.
         WHEN 5.
-          <fs_row>-werks_sup = ls_cell-value.
+          <fs_row>-werks_sup = lv_val.
         WHEN 6.
           " MATNR: agregar ceros a la izquierda (ej. 1000683002 → 000001000683002)
           CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
-            EXPORTING input  = ls_cell-value
+            EXPORTING input  = lv_val
             IMPORTING output = <fs_row>-matnr.
         WHEN 7.
-          <fs_row>-werks_rec = ls_cell-value.
+          <fs_row>-werks_rec = lv_val.
         WHEN 8.
           " Cantidad: admite coma o punto como separador decimal
-          DATA(lv_qty_text) = ls_cell-value.
+          DATA(lv_qty_text) = lv_val.
           REPLACE ALL OCCURRENCES OF ',' IN lv_qty_text WITH '.'.
           TRY.
               <fs_row>-menge = lv_qty_text.
@@ -240,7 +238,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
               CLEAR <fs_row>-menge.
           ENDTRY.
         WHEN 9.
-          <fs_row>-meins = ls_cell-value.
+          <fs_row>-meins = lv_val.
       ENDCASE.
 
     ENDLOOP.
@@ -453,31 +451,64 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
       lv_group_id = lv_group_id + 1.
 
-      DATA(lt_group_lines) = VALUE ty_excel_rows(
+      DATA(lt_all_lines) = VALUE ty_excel_rows(
         FOR ls IN lt_sorted
         WHERE ( lifnr = ls_key-lifnr
             AND eindt = ls_key-eindt
             AND ekorg = ls_key-ekorg )
         ( ls ) ).
 
+      " Separar líneas válidas de líneas con errores de validación
+      DATA lt_valid_lines TYPE ty_excel_rows.
+      CLEAR lt_valid_lines.
+
+      LOOP AT lt_all_lines INTO DATA(ls_line).
+        DATA(lv_has_error) = abap_false.
+        LOOP AT val_errors INTO DATA(ls_verr) WHERE row_num = ls_line-row_num.
+          " Registrar fila con error en el ALV de detalle
+          APPEND VALUE ty_result_detail(
+            group_id  = lv_group_id
+            matnr     = ls_line-matnr
+            werks_rec = ls_line-werks_rec
+            menge     = ls_line-menge
+            meins     = ls_line-meins
+            result    = 'ERROR'
+            message   = ls_verr-message ) TO result_det.
+          lv_has_error = abap_true.
+        ENDLOOP.
+        IF lv_has_error = abap_false.
+          APPEND ls_line TO lt_valid_lines.
+        ENDIF.
+      ENDLOOP.
+
       DATA(ls_header) = VALUE ty_result_header(
-        group_id = lv_group_id
-        lifnr    = ls_key-lifnr
-        eindt    = ls_key-eindt
-        ekorg    = ls_key-ekorg ).
+        group_id   = lv_group_id
+        lifnr      = ls_key-lifnr
+        eindt      = ls_key-eindt
+        ekorg      = ls_key-ekorg
+        total_recs = lines( lt_all_lines ) ).
 
       DATA(lt_details) = VALUE ty_result_details( ).
 
-      generate_allocation_table(
-        EXPORTING
-          i_group_id = lv_group_id
-          i_lines    = lt_group_lines
-        CHANGING
-          c_header   = ls_header
-          c_details  = lt_details ).
+      IF lt_valid_lines IS NOT INITIAL.
+        generate_allocation_table(
+          EXPORTING
+            i_group_id = lv_group_id
+            i_lines    = lt_valid_lines
+          CHANGING
+            c_header   = ls_header
+            c_details  = lt_details ).
+        APPEND LINES OF lt_details TO result_det.
+      ELSE.
+        ls_header-status     = 'Error'.
+        ls_header-error_recs = ls_header-total_recs.
+      ENDIF.
+
+      " Recalcular totales con las filas de error ya registradas
+      ls_header-error_recs = ls_header-error_recs +
+        lines( lt_all_lines ) - lines( lt_valid_lines ).
 
       APPEND ls_header TO result_hdr.
-      APPEND LINES OF lt_details TO result_det.
 
     ENDLOOP.
 
