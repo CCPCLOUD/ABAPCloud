@@ -677,10 +677,13 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    " ALV Grid real para el detalle: trae de forma nativa en su barra
-    " de herramientas las funciones de ordenar, filtrar, subtotales
-    " (agrupar) y exportar (Excel / archivo local). La cabecera se
-    " imprime arriba, en la misma pantalla, vía el evento TOP-OF-PAGE.
+    " ALV de tipo LISTA (no GRID/control gráfico) para el detalle: trae de
+    " forma nativa en su barra de herramientas las funciones de ordenar,
+    " filtrar, subtotales (agrupar) y exportar (Excel / archivo local).
+    " Se usa el tipo LISTA en lugar de GRID porque el TOP-OF-PAGE de GRID
+    " depende de un control de pantalla que no renderiza en este entorno
+    " WebGUI/Fiori; la LISTA usa el mismo mecanismo de lista clásica que
+    " ya funciona de forma confirmada con los WRITE/ULINE de la cabecera.
     DATA lt_fieldcat TYPE slis_t_fieldcat_alv.
     DATA ls_fc       TYPE slis_fieldcat_alv.
     DATA ls_layout   TYPE slis_layout_alv.
@@ -707,7 +710,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ls_event-form = 'TOP_OF_PAGE'.
     APPEND ls_event TO lt_events.
 
-    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
       EXPORTING
         i_callback_program     = sy-repid
         i_callback_top_of_page = 'TOP_OF_PAGE'
