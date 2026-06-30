@@ -633,86 +633,70 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    " Sin esta instrucción el reporte nunca transiciona a la pantalla de
-    " lista (screen 0): se queda en la pantalla de selección mostrando
-    " solo el mensaje de status, y los controles GUI (splitter + ALVs)
-    " jamás llegan a renderizarse porque su pantalla padre no existe.
-    LEAVE TO LIST-PROCESSING.
-    WRITE space.
+    " Dos bloques ALV planos (cabecera y detalle) apilados en la misma
+    " pantalla de lista. A diferencia de un control GUI embebido
+    " (splitter/SALV en cl_gui_container), un ALV de bloques es una
+    " lista clásica pura: se renderiza igual en SAPGUI y en WebGUI/Fiori.
+    DATA lt_fieldcat_hdr TYPE slis_t_fieldcat_alv.
+    DATA lt_fieldcat_det TYPE slis_t_fieldcat_alv.
+    DATA ls_fc           TYPE slis_fieldcat_alv.
+    DATA ls_layout       TYPE slis_layout_alv.
 
-    DATA lo_splitter TYPE REF TO cl_gui_splitter_container.
-    DATA lo_top      TYPE REF TO cl_gui_container.
-    DATA lo_bottom   TYPE REF TO cl_gui_container.
-    DATA lo_salv_hdr TYPE REF TO cl_salv_table.
-    DATA lo_salv_det TYPE REF TO cl_salv_table.
+    " ── Catálogo de campos: ALV Cabecera ─────────────────────────────
+    CLEAR ls_fc. ls_fc-fieldname = 'LIFNR'.        ls_fc-seltext_l = 'Proveedor'.           ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'EINDT'.        ls_fc-seltext_l = 'Fecha Entrega'.       ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'EKORG'.        ls_fc-seltext_l = 'Org. Compras'.        ls_fc-col_pos = 3. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'.  ls_fc-seltext_l = 'Tabla de asignación'.  ls_fc-col_pos = 4. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'TOTAL_RECS'.   ls_fc-seltext_l = 'Total Registros'.      ls_fc-col_pos = 5. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'SUCCESS_RECS'. ls_fc-seltext_l = 'Exitosos'.             ls_fc-col_pos = 6. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'ERROR_RECS'.   ls_fc-seltext_l = 'Errores'.              ls_fc-col_pos = 7. APPEND ls_fc TO lt_fieldcat_hdr.
+    CLEAR ls_fc. ls_fc-fieldname = 'STATUS'.       ls_fc-seltext_l = 'Estatus'.              ls_fc-col_pos = 8. APPEND ls_fc TO lt_fieldcat_hdr.
 
-    CREATE OBJECT lo_splitter
+    " ── Catálogo de campos: ALV Detalle ──────────────────────────────
+    CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla de asignación'. ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.            ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'WERKS_REC'.   ls_fc-seltext_l = 'Centro Destino'.       ls_fc-col_pos = 3. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'MENGE'.       ls_fc-seltext_l = 'Cantidad'.             ls_fc-col_pos = 4. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'MEINS'.       ls_fc-seltext_l = 'Unidad de medida'.     ls_fc-col_pos = 5. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'RESULT'.      ls_fc-seltext_l = 'Resultado'.            ls_fc-col_pos = 6. APPEND ls_fc TO lt_fieldcat_det.
+    CLEAR ls_fc. ls_fc-fieldname = 'MESSAGE'.     ls_fc-seltext_l = 'Mensaje SAP'.          ls_fc-col_pos = 7. APPEND ls_fc TO lt_fieldcat_det.
+
+    ls_layout-zebra            = abap_true.
+    ls_layout-colwidth_optimize = abap_true.
+
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_INIT'
       EXPORTING
-        parent  = cl_gui_container=>screen0
-        rows    = 2
-        columns = 1.
+        i_callback_program = sy-repid.
 
-    lo_splitter->set_row_height( id = 1 height = 40 ).
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+      EXPORTING
+        is_layout       = ls_layout
+        it_fieldcat     = lt_fieldcat_hdr
+        i_tabname       = 'RESULT_HDR'
+        i_text          = 'Resumen por Tabla de Asignación'
+      TABLES
+        t_outtab        = result_hdr.
 
-    lo_top    = lo_splitter->get_container( row = 1 column = 1 ).
-    lo_bottom = lo_splitter->get_container( row = 2 column = 1 ).
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+      EXPORTING
+        is_layout       = ls_layout
+        it_fieldcat     = lt_fieldcat_det
+        i_tabname       = 'RESULT_DET'
+        i_text          = 'Detalle por Material'
+      TABLES
+        t_outtab        = result_det.
 
-    TRY.
-        cl_salv_table=>factory(
-          EXPORTING r_container  = lo_top
-          IMPORTING r_salv_table = lo_salv_hdr
-          CHANGING  t_table      = result_hdr ).
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_DISPLAY'
+      EXPORTING
+        i_callback_program = sy-repid
+      EXCEPTIONS
+        program_error       = 1
+        maximum_of_appends_reached = 2
+        OTHERS               = 3.
 
-        cl_salv_table=>factory(
-          EXPORTING r_container  = lo_bottom
-          IMPORTING r_salv_table = lo_salv_det
-          CHANGING  t_table      = result_det ).
-      CATCH cx_salv_msg.
-        MESSAGE 'Error al construir los ALV de resultados' TYPE 'I' DISPLAY LIKE 'E'.
-        RETURN.
-    ENDTRY.
-
-    " ── ALV Cabecera ───────────────────────────────────────────────
-    DATA(lo_cols_hdr) = lo_salv_hdr->get_columns( ).
-    lo_cols_hdr->set_optimize( abap_true ).
-
-    TRY.
-        lo_cols_hdr->get_column( 'GROUP_ID' )->set_visible( abap_false ).
-        lo_cols_hdr->get_column( 'LIFNR' )->set_long_text( 'Proveedor' ).
-        lo_cols_hdr->get_column( 'EINDT' )->set_long_text( 'Fecha Entrega' ).
-        lo_cols_hdr->get_column( 'EKORG' )->set_long_text( 'Org. Compras' ).
-        lo_cols_hdr->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de asignación' ).
-        lo_cols_hdr->get_column( 'TOTAL_RECS' )->set_long_text( 'Total Registros' ).
-        lo_cols_hdr->get_column( 'SUCCESS_RECS' )->set_long_text( 'Exitosos' ).
-        lo_cols_hdr->get_column( 'ERROR_RECS' )->set_long_text( 'Errores' ).
-        lo_cols_hdr->get_column( 'STATUS' )->set_long_text( 'Estatus' ).
-      CATCH cx_salv_not_found.
-    ENDTRY.
-
-    lo_salv_hdr->get_display_settings( )->set_striped_pattern( abap_true ).
-
-    " ── ALV Detalle ────────────────────────────────────────────────
-    DATA(lo_cols_det) = lo_salv_det->get_columns( ).
-    lo_cols_det->set_optimize( abap_true ).
-
-    TRY.
-        lo_cols_det->get_column( 'GROUP_ID' )->set_visible( abap_false ).
-        lo_cols_det->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de asignación' ).
-        lo_cols_det->get_column( 'MATNR' )->set_long_text( 'Material' ).
-        lo_cols_det->get_column( 'WERKS_REC' )->set_long_text( 'Centro Destino' ).
-        lo_cols_det->get_column( 'MENGE' )->set_long_text( 'Cantidad' ).
-        lo_cols_det->get_column( 'MEINS' )->set_long_text( 'Unidad de medida' ).
-        lo_cols_det->get_column( 'RESULT' )->set_long_text( 'Resultado' ).
-        lo_cols_det->get_column( 'MESSAGE' )->set_long_text( 'Mensaje SAP' ).
-      CATCH cx_salv_not_found.
-    ENDTRY.
-
-    lo_salv_det->get_display_settings( )->set_striped_pattern( abap_true ).
-
-    lo_salv_hdr->display( ).
-    lo_salv_det->display( ).
-
-    cl_gui_cfw=>flush( ).
+    IF sy-subrc <> 0.
+      MESSAGE 'Error al mostrar los resultados del ALV' TYPE 'I' DISPLAY LIKE 'E'.
+    ENDIF.
 
   ENDMETHOD.
 
