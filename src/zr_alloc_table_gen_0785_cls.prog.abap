@@ -713,7 +713,6 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
       EXPORTING
         i_callback_program     = sy-repid
-        i_callback_top_of_page = 'TOP_OF_PAGE'
         is_layout              = ls_layout
         it_fieldcat            = lt_fieldcat
         it_events              = lt_events
