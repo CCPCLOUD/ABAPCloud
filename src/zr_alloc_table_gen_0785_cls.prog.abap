@@ -642,25 +642,25 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ULINE.
     WRITE: / 'CABECERA - RESUMEN POR TABLA DE ASIGNACIÓN' COLOR COL_HEADING.
     ULINE.
-    WRITE: /1   'Proveedor'        COLOR COL_HEADING,
-            12  'Fecha Entrega'    COLOR COL_HEADING,
-            27  'Org. Compras'     COLOR COL_HEADING,
-            41  'Tabla Asignación' COLOR COL_HEADING,
-            59  'Total Reg.'       COLOR COL_HEADING,
-            70  'Exitosos'         COLOR COL_HEADING,
-            79  'Errores'          COLOR COL_HEADING,
-            88  'Estatus'          COLOR COL_HEADING.
+    WRITE: /1       'Proveedor'        COLOR COL_HEADING,
+            12(11)   'Fecha Entrega'    COLOR COL_HEADING,
+            24(11)   'Org. Compras'     COLOR COL_HEADING,
+            36(18)   'Tabla Asignación' COLOR COL_HEADING,
+            55(10)   'Total Reg.'       COLOR COL_HEADING,
+            66(9)    'Exitosos'         COLOR COL_HEADING,
+            76(9)    'Errores'          COLOR COL_HEADING,
+            86       'Estatus'          COLOR COL_HEADING.
     ULINE.
 
     LOOP AT result_hdr INTO DATA(ls_hdr).
-      WRITE: /1   ls_hdr-lifnr,
-              12  ls_hdr-eindt,
-              27  ls_hdr-ekorg,
-              41  ls_hdr-alloc_table,
-              59  ls_hdr-total_recs,
-              70  ls_hdr-success_recs,
-              79  ls_hdr-error_recs,
-              88  ls_hdr-status.
+      WRITE: /1       ls_hdr-lifnr,
+              12(11)   ls_hdr-eindt,
+              24(11)   ls_hdr-ekorg,
+              36(18)   ls_hdr-alloc_table,
+              55(10)   ls_hdr-total_recs,
+              66(9)    ls_hdr-success_recs,
+              76(9)    ls_hdr-error_recs,
+              86       ls_hdr-status.
     ENDLOOP.
     ULINE.
 
@@ -670,27 +670,27 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ULINE.
     WRITE: / 'DETALLE POR MATERIAL' COLOR COL_HEADING.
     ULINE.
-    WRITE: /1   'Tabla Asignación' COLOR COL_HEADING,
-            19  'Material'         COLOR COL_HEADING,
-            38  'Centro Destino'   COLOR COL_HEADING,
-            53  'Cantidad'         COLOR COL_HEADING,
-            64  'UM'               COLOR COL_HEADING,
-            68  'Resultado'        COLOR COL_HEADING,
-            78  'Mensaje SAP'      COLOR COL_HEADING.
+    WRITE: /1       'Tabla Asignación' COLOR COL_HEADING,
+            20(18)   'Material'         COLOR COL_HEADING,
+            39(14)   'Centro Destino'   COLOR COL_HEADING,
+            54(10)   'Cantidad'         COLOR COL_HEADING,
+            65(4)    'UM'               COLOR COL_HEADING,
+            70(10)   'Resultado'        COLOR COL_HEADING,
+            81       'Mensaje SAP'      COLOR COL_HEADING.
     ULINE.
 
     LOOP AT result_det INTO DATA(ls_det).
-      WRITE: /1   ls_det-alloc_table,
-              19  ls_det-matnr,
-              38  ls_det-werks_rec,
-              53  ls_det-menge,
-              64  ls_det-meins.
+      WRITE: /1       ls_det-alloc_table,
+              20(18)   ls_det-matnr,
+              39(14)   ls_det-werks_rec,
+              54(10)   ls_det-menge,
+              65(4)    ls_det-meins.
       IF ls_det-result = 'OK'.
-        WRITE: 68 ls_det-result COLOR COL_POSITIVE.
+        WRITE: 70(10) ls_det-result COLOR COL_POSITIVE.
       ELSE.
-        WRITE: 68 ls_det-result COLOR COL_NEGATIVE.
+        WRITE: 70(10) ls_det-result COLOR COL_NEGATIVE.
       ENDIF.
-      WRITE: 78 ls_det-message.
+      WRITE: 81 ls_det-message.
     ENDLOOP.
     ULINE.
 
