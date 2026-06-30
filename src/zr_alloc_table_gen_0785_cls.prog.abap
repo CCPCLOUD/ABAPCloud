@@ -633,70 +633,63 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    " Dos bloques ALV planos (cabecera y detalle) apilados en la misma
-    " pantalla de lista. A diferencia de un control GUI embebido
-    " (splitter/SALV en cl_gui_container), un ALV de bloques es una
-    " lista clásica pura: se renderiza igual en SAPGUI y en WebGUI/Fiori.
-    DATA lt_fieldcat_hdr TYPE slis_t_fieldcat_alv.
-    DATA lt_fieldcat_det TYPE slis_t_fieldcat_alv.
-    DATA ls_fc           TYPE slis_fieldcat_alv.
-    DATA ls_layout       TYPE slis_layout_alv.
+    " Salida de lista clásica con WRITE/ULINE: no depende de ningún
+    " Function Module externo (cuya firma de parámetros puede variar
+    " entre sistemas), por lo que no puede fallar por parámetro
+    " faltante. Se renderiza igual en SAPGUI clásico y en WebGUI/Fiori.
 
-    " ── Catálogo de campos: ALV Cabecera ─────────────────────────────
-    CLEAR ls_fc. ls_fc-fieldname = 'LIFNR'.        ls_fc-seltext_l = 'Proveedor'.           ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'EINDT'.        ls_fc-seltext_l = 'Fecha Entrega'.       ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'EKORG'.        ls_fc-seltext_l = 'Org. Compras'.        ls_fc-col_pos = 3. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'.  ls_fc-seltext_l = 'Tabla de asignación'.  ls_fc-col_pos = 4. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'TOTAL_RECS'.   ls_fc-seltext_l = 'Total Registros'.      ls_fc-col_pos = 5. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'SUCCESS_RECS'. ls_fc-seltext_l = 'Exitosos'.             ls_fc-col_pos = 6. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'ERROR_RECS'.   ls_fc-seltext_l = 'Errores'.              ls_fc-col_pos = 7. APPEND ls_fc TO lt_fieldcat_hdr.
-    CLEAR ls_fc. ls_fc-fieldname = 'STATUS'.       ls_fc-seltext_l = 'Estatus'.              ls_fc-col_pos = 8. APPEND ls_fc TO lt_fieldcat_hdr.
+    " ── ALV Cabecera ──────────────────────────────────────────────
+    ULINE.
+    WRITE: / 'CABECERA - RESUMEN POR TABLA DE ASIGNACIÓN' COLOR COL_HEADING.
+    ULINE.
+    WRITE: /1   'Proveedor'        COLOR COL_HEADING,
+            12  'Fecha Entrega'    COLOR COL_HEADING,
+            27  'Org. Compras'     COLOR COL_HEADING,
+            41  'Tabla Asignación' COLOR COL_HEADING,
+            59  'Total Reg.'       COLOR COL_HEADING,
+            70  'Exitosos'         COLOR COL_HEADING,
+            79  'Errores'          COLOR COL_HEADING,
+            88  'Estatus'          COLOR COL_HEADING.
+    ULINE.
 
-    " ── Catálogo de campos: ALV Detalle ──────────────────────────────
-    CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla de asignación'. ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.            ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'WERKS_REC'.   ls_fc-seltext_l = 'Centro Destino'.       ls_fc-col_pos = 3. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'MENGE'.       ls_fc-seltext_l = 'Cantidad'.             ls_fc-col_pos = 4. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'MEINS'.       ls_fc-seltext_l = 'Unidad de medida'.     ls_fc-col_pos = 5. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'RESULT'.      ls_fc-seltext_l = 'Resultado'.            ls_fc-col_pos = 6. APPEND ls_fc TO lt_fieldcat_det.
-    CLEAR ls_fc. ls_fc-fieldname = 'MESSAGE'.     ls_fc-seltext_l = 'Mensaje SAP'.          ls_fc-col_pos = 7. APPEND ls_fc TO lt_fieldcat_det.
+    LOOP AT result_hdr INTO DATA(ls_hdr).
+      WRITE: /1   ls_hdr-lifnr,
+              12  ls_hdr-eindt,
+              27  ls_hdr-ekorg,
+              41  ls_hdr-alloc_table,
+              59  ls_hdr-total_recs,
+              70  ls_hdr-success_recs,
+              79  ls_hdr-error_recs,
+              88  ls_hdr-status.
+    ENDLOOP.
+    ULINE.
 
-    ls_layout-zebra            = abap_true.
-    ls_layout-colwidth_optimize = abap_true.
+    SKIP.
 
-    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_INIT'
-      EXPORTING
-        i_callback_program = sy-repid.
+    " ── ALV Detalle ───────────────────────────────────────────────
+    ULINE.
+    WRITE: / 'DETALLE POR MATERIAL' COLOR COL_HEADING.
+    ULINE.
+    WRITE: /1   'Tabla Asignación' COLOR COL_HEADING,
+            19  'Material'         COLOR COL_HEADING,
+            38  'Centro Destino'   COLOR COL_HEADING,
+            53  'Cantidad'         COLOR COL_HEADING,
+            64  'UM'               COLOR COL_HEADING,
+            68  'Resultado'        COLOR COL_HEADING,
+            78  'Mensaje SAP'      COLOR COL_HEADING.
+    ULINE.
 
-    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
-      EXPORTING
-        is_layout       = ls_layout
-        it_fieldcat     = lt_fieldcat_hdr
-        i_tabname       = 'RESULT_HDR'
-        i_text          = 'Resumen por Tabla de Asignación'
-      TABLES
-        t_outtab        = result_hdr.
-
-    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
-      EXPORTING
-        is_layout       = ls_layout
-        it_fieldcat     = lt_fieldcat_det
-        i_tabname       = 'RESULT_DET'
-        i_text          = 'Detalle por Material'
-      TABLES
-        t_outtab        = result_det.
-
-    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_DISPLAY'
-      EXPORTING
-        i_callback_program = sy-repid
-      EXCEPTIONS
-        program_error       = 1
-        maximum_of_appends_reached = 2
-        OTHERS               = 3.
-
-    IF sy-subrc <> 0.
-      MESSAGE 'Error al mostrar los resultados del ALV' TYPE 'I' DISPLAY LIKE 'E'.
-    ENDIF.
+    LOOP AT result_det INTO DATA(ls_det).
+      DATA(lv_result_color) = COND i( WHEN ls_det-result = 'OK' THEN col_positive ELSE col_negative ).
+      WRITE: /1   ls_det-alloc_table,
+              19  ls_det-matnr,
+              38  ls_det-werks_rec,
+              53  ls_det-menge,
+              64  ls_det-meins,
+              68  ls_det-result COLOR lv_result_color,
+              78  ls_det-message.
+    ENDLOOP.
+    ULINE.
 
   ENDMETHOD.
 
