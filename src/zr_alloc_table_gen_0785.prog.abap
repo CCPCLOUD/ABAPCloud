@@ -39,3 +39,12 @@ START-OF-SELECTION.
     i_file_path  = p_file
     i_simulation = lv_simulation
   )->process( ).
+
+
+" Callback de TOP-OF-PAGE para REUSE_ALV_GRID_DISPLAY: imprime la
+" cabecera (resumen por Tabla de Asignación) arriba del ALV de detalle.
+FORM top_of_page.
+  IF lcl_alloc_table_gen=>go_instance IS BOUND.
+    lcl_alloc_table_gen=>go_instance->print_header_block( ).
+  ENDIF.
+ENDFORM.

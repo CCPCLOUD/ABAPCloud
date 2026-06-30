@@ -57,6 +57,11 @@ CLASS lcl_alloc_table_gen DEFINITION.
            END OF ty_result_detail.
     TYPES ty_result_details TYPE STANDARD TABLE OF ty_result_detail WITH EMPTY KEY.
 
+    " Referencia a la instancia activa, usada por el FORM global de
+    " TOP-OF-PAGE (callback de REUSE_ALV_GRID_DISPLAY) para poder
+    " invocar de vuelta el método de instancia que imprime la cabecera.
+    CLASS-DATA go_instance TYPE REF TO lcl_alloc_table_gen.
+
     METHODS constructor
       IMPORTING
         i_file_path  TYPE string
@@ -65,6 +70,10 @@ CLASS lcl_alloc_table_gen DEFINITION.
     "! Orquesta el proceso completo: carga, validación, agrupación,
     "! generación de tablas de asignación y despliegue de resultados.
     METHODS process.
+
+    "! Imprime el bloque de cabecera (resumen por Tabla de Asignación)
+    "! como TOP-OF-PAGE del ALV Grid de detalle, en la misma pantalla.
+    METHODS print_header_block.
 
   PRIVATE SECTION.
 
@@ -123,6 +132,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
   METHOD constructor.
     file_path  = i_file_path.
     simulation = i_simulation.
+    go_instance = me.
   ENDMETHOD.
 
 
@@ -631,14 +641,10 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD display_results.
+  METHOD print_header_block.
 
-    " Salida de lista clásica con WRITE/ULINE: no depende de ningún
-    " Function Module externo (cuya firma de parámetros puede variar
-    " entre sistemas), por lo que no puede fallar por parámetro
-    " faltante. Se renderiza igual en SAPGUI clásico y en WebGUI/Fiori.
-
-    " ── ALV Cabecera ──────────────────────────────────────────────
+    " Bloque de cabecera impreso vía TOP-OF-PAGE: queda arriba, en la
+    " misma pantalla que el ALV Grid de detalle que se muestra debajo.
     ULINE.
     WRITE: / 'CABECERA - RESUMEN POR TABLA DE ASIGNACIÓN' COLOR COL_HEADING.
     ULINE.
@@ -663,36 +669,49 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
               86       ls_hdr-status.
     ENDLOOP.
     ULINE.
-
     SKIP.
-
-    " ── ALV Detalle ───────────────────────────────────────────────
-    ULINE.
     WRITE: / 'DETALLE POR MATERIAL' COLOR COL_HEADING.
-    ULINE.
-    WRITE: /1       'Tabla Asignación' COLOR COL_HEADING,
-            20(18)   'Material'         COLOR COL_HEADING,
-            39(14)   'Centro Destino'   COLOR COL_HEADING,
-            54(10)   'Cantidad'         COLOR COL_HEADING,
-            65(4)    'UM'               COLOR COL_HEADING,
-            70(10)   'Resultado'        COLOR COL_HEADING,
-            81       'Mensaje SAP'      COLOR COL_HEADING.
-    ULINE.
 
-    LOOP AT result_det INTO DATA(ls_det).
-      WRITE: /1       ls_det-alloc_table,
-              20(18)   ls_det-matnr,
-              39(14)   ls_det-werks_rec,
-              54(10)   ls_det-menge,
-              65(4)    ls_det-meins.
-      IF ls_det-result = 'OK'.
-        WRITE: 70(10) ls_det-result COLOR COL_POSITIVE.
-      ELSE.
-        WRITE: 70(10) ls_det-result COLOR COL_NEGATIVE.
-      ENDIF.
-      WRITE: 81 ls_det-message.
-    ENDLOOP.
-    ULINE.
+  ENDMETHOD.
+
+
+  METHOD display_results.
+
+    " ALV Grid real para el detalle: trae de forma nativa en su barra
+    " de herramientas las funciones de ordenar, filtrar, subtotales
+    " (agrupar) y exportar (Excel / archivo local). La cabecera se
+    " imprime arriba, en la misma pantalla, vía el evento TOP-OF-PAGE.
+    DATA lt_fieldcat TYPE slis_t_fieldcat_alv.
+    DATA ls_fc       TYPE slis_fieldcat_alv.
+    DATA ls_layout   TYPE slis_layout_alv.
+
+    CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla de asignación'. ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.            ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'WERKS_REC'.   ls_fc-seltext_l = 'Centro Destino'.       ls_fc-col_pos = 3. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'MENGE'.       ls_fc-seltext_l = 'Cantidad'.             ls_fc-col_pos = 4. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'MEINS'.       ls_fc-seltext_l = 'Unidad de medida'.     ls_fc-col_pos = 5. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'RESULT'.      ls_fc-seltext_l = 'Resultado'.            ls_fc-col_pos = 6. APPEND ls_fc TO lt_fieldcat.
+    CLEAR ls_fc. ls_fc-fieldname = 'MESSAGE'.     ls_fc-seltext_l = 'Mensaje SAP'.          ls_fc-col_pos = 7. APPEND ls_fc TO lt_fieldcat.
+
+    ls_layout-zebra             = abap_true.
+    ls_layout-colwidth_optimize = abap_true.
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+        i_callback_program     = sy-repid
+        i_callback_top_of_page = 'TOP_OF_PAGE'
+        is_layout              = ls_layout
+        it_fieldcat            = lt_fieldcat
+        i_save                 = 'A'
+      TABLES
+        t_outtab               = result_det
+      EXCEPTIONS
+        program_error           = 1
+        OTHERS                  = 2.
+
+    IF sy-subrc <> 0.
+      MESSAGE 'Error al mostrar los resultados del ALV' TYPE 'I' DISPLAY LIKE 'E'.
+    ENDIF.
 
   ENDMETHOD.
 
