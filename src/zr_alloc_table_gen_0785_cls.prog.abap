@@ -54,6 +54,7 @@ CLASS lcl_alloc_table_gen DEFINITION.
              meins       TYPE meins,
              result      TYPE char6,
              message     TYPE string,
+             coltab      TYPE slis_t_specialcol_alv,
            END OF ty_result_detail.
     TYPES ty_result_details TYPE STANDARD TABLE OF ty_result_detail WITH EMPTY KEY.
 
@@ -479,7 +480,8 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
             menge     = ls_line-menge
             meins     = ls_line-meins
             result    = 'ERROR'
-            message   = ls_verr-message ) TO result_det.
+            message   = ls_verr-message
+            coltab    = VALUE #( ( fieldname = 'RESULT' color-col = 6 color-int = 1 ) ) ) TO result_det.
           lv_has_error = abap_true.
         ENDLOOP.
         IF lv_has_error = abap_false.
@@ -635,7 +637,10 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         menge       = ls_result_line-menge
         meins       = ls_result_line-meins
         result      = COND char6( WHEN lv_success = abap_true THEN 'OK' ELSE 'ERROR' )
-        message     = lv_msg_text ) TO c_details.
+        message     = lv_msg_text
+        coltab      = VALUE #( ( fieldname = 'RESULT'
+                                  color-col = COND #( WHEN lv_success = abap_true THEN 5 ELSE 6 )
+                                  color-int = 1 ) ) ) TO c_details.
     ENDLOOP.
 
   ENDMETHOD.
@@ -700,6 +705,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
     ls_layout-zebra             = abap_true.
     ls_layout-colwidth_optimize = abap_true.
+    ls_layout-coltab_fieldname  = 'COLTAB'.
 
     " Registro explícito del evento TOP-OF-PAGE: en algunas versiones del
     " FM, el parámetro i_callback_top_of_page por sí solo no es suficiente
