@@ -680,14 +680,17 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ULINE.
 
     LOOP AT result_det INTO DATA(ls_det).
-      DATA(lv_result_color) = COND i( WHEN ls_det-result = 'OK' THEN col_positive ELSE col_negative ).
       WRITE: /1   ls_det-alloc_table,
               19  ls_det-matnr,
               38  ls_det-werks_rec,
               53  ls_det-menge,
-              64  ls_det-meins,
-              68  ls_det-result COLOR lv_result_color,
-              78  ls_det-message.
+              64  ls_det-meins.
+      IF ls_det-result = 'OK'.
+        WRITE: 68 ls_det-result COLOR COL_POSITIVE.
+      ELSE.
+        WRITE: 68 ls_det-result COLOR COL_NEGATIVE.
+      ENDIF.
+      WRITE: 78 ls_det-message.
     ENDLOOP.
     ULINE.
 
