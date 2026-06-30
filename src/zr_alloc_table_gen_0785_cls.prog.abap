@@ -633,6 +633,13 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
+    " Sin esta instrucción el reporte nunca transiciona a la pantalla de
+    " lista (screen 0): se queda en la pantalla de selección mostrando
+    " solo el mensaje de status, y los controles GUI (splitter + ALVs)
+    " jamás llegan a renderizarse porque su pantalla padre no existe.
+    LEAVE TO LIST-PROCESSING.
+    WRITE space.
+
     DATA lo_splitter TYPE REF TO cl_gui_splitter_container.
     DATA lo_top      TYPE REF TO cl_gui_container.
     DATA lo_bottom   TYPE REF TO cl_gui_container.
@@ -704,6 +711,8 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
     lo_salv_hdr->display( ).
     lo_salv_det->display( ).
+
+    cl_gui_cfw=>flush( ).
 
   ENDMETHOD.
 
