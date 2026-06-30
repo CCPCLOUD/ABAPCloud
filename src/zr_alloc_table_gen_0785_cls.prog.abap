@@ -96,10 +96,6 @@ CLASS lcl_alloc_table_gen DEFINITION.
 
     METHODS check_group_consistency.
 
-    "! Muestra todos los errores de validación en una ventana emergente
-    "! y finaliza el procesamiento (sin generar tablas de asignación).
-    METHODS show_validation_errors.
-
     "! Agrupa los registros válidos por Proveedor / Fecha de Entrega / Org. Compras
     "! y genera una Tabla de Asignación por cada grupo.
     METHODS process_groups.
@@ -222,10 +218,17 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         WHEN 5.
           <fs_row>-werks_sup = lv_val.
         WHEN 6.
-          " MATNR: agregar ceros a la izquierda (ej. 1000683002 → 000001000683002)
-          CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
-            EXPORTING input  = lv_val
-            IMPORTING output = <fs_row>-matnr.
+          " MATNR: usar el exit propio de material (MATN1), no ALPHA genérico,
+          " ya que ALPHA rellena hasta el largo completo del dominio MATNR (40)
+          " y produce ceros de más en sistemas con material number extendido.
+          CALL FUNCTION 'CONVERSION_EXIT_MATN1_INPUT'
+            EXPORTING input        = lv_val
+            IMPORTING output       = <fs_row>-matnr
+            EXCEPTIONS length_error = 1
+                        OTHERS       = 2.
+          IF sy-subrc <> 0.
+            <fs_row>-matnr = lv_val.
+          ENDIF.
         WHEN 7.
           <fs_row>-werks_rec = lv_val.
         WHEN 8.
@@ -238,7 +241,16 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
               CLEAR <fs_row>-menge.
           ENDTRY.
         WHEN 9.
-          <fs_row>-meins = lv_val.
+          " MEINS: convertir de unidad externa a interna (algunas unidades
+          " tienen un código interno distinto al texto corto mostrado).
+          CALL FUNCTION 'CONVERSION_EXIT_CUNIT_INPUT'
+            EXPORTING  input  = lv_val
+            IMPORTING  output = <fs_row>-meins
+            EXCEPTIONS unit_not_found = 1
+                        OTHERS         = 2.
+          IF sy-subrc <> 0.
+            <fs_row>-meins = lv_val.
+          ENDIF.
       ENDCASE.
 
     ENDLOOP.
@@ -400,22 +412,6 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
       ENDIF.
 
     ENDLOOP.
-
-  ENDMETHOD.
-
-
-  METHOD show_validation_errors.
-
-    DATA(lv_message) = |Se encontraron { lines( val_errors ) } error(es) en el archivo:|
-                     && cl_abap_char_utilities=>newline.
-
-    LOOP AT val_errors INTO DATA(ls_error).
-      lv_message = lv_message
-                 && |Fila { ls_error-row_num }: { ls_error-message }|
-                 && cl_abap_char_utilities=>newline.
-    ENDLOOP.
-
-    MESSAGE lv_message TYPE 'I' DISPLAY LIKE 'E'.
 
   ENDMETHOD.
 
@@ -637,57 +633,77 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
 
   METHOD display_results.
 
-    DATA lt_fieldcat TYPE slis_t_fieldcat_alv.
-    DATA ls_fc       TYPE slis_fieldcat_alv.
-    DATA ls_keyinfo  TYPE slis_keyinfo_alv.
-    DATA ls_layout   TYPE slis_layout_alv.
+    DATA lo_splitter TYPE REF TO cl_gui_splitter_container.
+    DATA lo_top      TYPE REF TO cl_gui_container.
+    DATA lo_bottom   TYPE REF TO cl_gui_container.
+    DATA lo_salv_hdr TYPE REF TO cl_salv_table.
+    DATA lo_salv_det TYPE REF TO cl_salv_table.
 
-    " ── Field catalog cabecera (tabname = 'HDR') ─────────────────────
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'GROUP_ID'.    ls_fc-no_out   = 'X'.                                APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'LIFNR'.       ls_fc-seltext_l = 'Proveedor'.        ls_fc-col_pos = 1.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'EINDT'.       ls_fc-seltext_l = 'Fecha Entrega'.    ls_fc-col_pos = 2.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'EKORG'.       ls_fc-seltext_l = 'Org. Compras'.     ls_fc-col_pos = 3.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla Asignacion'. ls_fc-col_pos = 4.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'TOTAL_RECS'.  ls_fc-seltext_l = 'Total Registros'.  ls_fc-col_pos = 5.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'SUCCESS_RECS'.ls_fc-seltext_l = 'Exitosos'.         ls_fc-col_pos = 6.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'ERROR_RECS'.  ls_fc-seltext_l = 'Errores'.          ls_fc-col_pos = 7.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'HDR'. ls_fc-fieldname = 'STATUS'.      ls_fc-seltext_l = 'Estatus'.          ls_fc-col_pos = 8.  APPEND ls_fc TO lt_fieldcat.
-
-    " ── Field catalog detalle (tabname = 'DET') ──────────────────────
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'GROUP_ID'.    ls_fc-no_out   = 'X'.                                APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla Asignacion'. ls_fc-col_pos = 1.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.         ls_fc-col_pos = 2.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'WERKS_REC'.   ls_fc-seltext_l = 'Centro Destino'.   ls_fc-col_pos = 3.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MENGE'.       ls_fc-seltext_l = 'Cantidad'.         ls_fc-col_pos = 4.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MEINS'.       ls_fc-seltext_l = 'Unidad de Medida'. ls_fc-col_pos = 5.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'RESULT'.      ls_fc-seltext_l = 'Resultado'.        ls_fc-col_pos = 6.  APPEND ls_fc TO lt_fieldcat.
-    CLEAR ls_fc. ls_fc-tabname = 'DET'. ls_fc-fieldname = 'MESSAGE'.     ls_fc-seltext_l = 'Mensaje SAP'.      ls_fc-col_pos = 7.  APPEND ls_fc TO lt_fieldcat.
-
-    " ── Enlace cabecera ↔ detalle por GROUP_ID ───────────────────────
-    ls_keyinfo-header01 = 'GROUP_ID'.
-    ls_keyinfo-item01   = 'GROUP_ID'.
-
-    ls_layout-zebra          = abap_true.
-    ls_layout-colwidth_optimize = abap_true.
-
-    CALL FUNCTION 'REUSE_ALV_HIERSEQ_LIST_DISPLAY'
+    CREATE OBJECT lo_splitter
       EXPORTING
-        i_callback_program = sy-repid
-        i_tabname_header   = 'HDR'
-        i_tabname_item     = 'DET'
-        is_keyinfo         = ls_keyinfo
-        it_fieldcat        = lt_fieldcat
-        is_layout          = ls_layout
-      TABLES
-        t_outtab_header    = result_hdr
-        t_outtab_item      = result_det
-      EXCEPTIONS
-        program_error      = 1
-        OTHERS             = 2.
+        parent  = cl_gui_container=>screen0
+        rows    = 2
+        columns = 1.
 
-    IF sy-subrc <> 0.
-      MESSAGE 'Error al mostrar los resultados del ALV' TYPE 'I' DISPLAY LIKE 'E'.
-    ENDIF.
+    lo_splitter->set_row_height( id = 1 height = 40 ).
+
+    lo_top    = lo_splitter->get_container( row = 1 column = 1 ).
+    lo_bottom = lo_splitter->get_container( row = 2 column = 1 ).
+
+    TRY.
+        cl_salv_table=>factory(
+          EXPORTING r_container  = lo_top
+          IMPORTING r_salv_table = lo_salv_hdr
+          CHANGING  t_table      = result_hdr ).
+
+        cl_salv_table=>factory(
+          EXPORTING r_container  = lo_bottom
+          IMPORTING r_salv_table = lo_salv_det
+          CHANGING  t_table      = result_det ).
+      CATCH cx_salv_msg.
+        MESSAGE 'Error al construir los ALV de resultados' TYPE 'I' DISPLAY LIKE 'E'.
+        RETURN.
+    ENDTRY.
+
+    " ── ALV Cabecera ───────────────────────────────────────────────
+    DATA(lo_cols_hdr) = lo_salv_hdr->get_columns( ).
+    lo_cols_hdr->set_optimize( abap_true ).
+
+    TRY.
+        lo_cols_hdr->get_column( 'GROUP_ID' )->set_visible( abap_false ).
+        lo_cols_hdr->get_column( 'LIFNR' )->set_long_text( 'Proveedor' ).
+        lo_cols_hdr->get_column( 'EINDT' )->set_long_text( 'Fecha Entrega' ).
+        lo_cols_hdr->get_column( 'EKORG' )->set_long_text( 'Org. Compras' ).
+        lo_cols_hdr->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de asignación' ).
+        lo_cols_hdr->get_column( 'TOTAL_RECS' )->set_long_text( 'Total Registros' ).
+        lo_cols_hdr->get_column( 'SUCCESS_RECS' )->set_long_text( 'Exitosos' ).
+        lo_cols_hdr->get_column( 'ERROR_RECS' )->set_long_text( 'Errores' ).
+        lo_cols_hdr->get_column( 'STATUS' )->set_long_text( 'Estatus' ).
+      CATCH cx_salv_not_found.
+    ENDTRY.
+
+    lo_salv_hdr->get_display_settings( )->set_striped_pattern( abap_true ).
+
+    " ── ALV Detalle ────────────────────────────────────────────────
+    DATA(lo_cols_det) = lo_salv_det->get_columns( ).
+    lo_cols_det->set_optimize( abap_true ).
+
+    TRY.
+        lo_cols_det->get_column( 'GROUP_ID' )->set_visible( abap_false ).
+        lo_cols_det->get_column( 'ALLOC_TABLE' )->set_long_text( 'Tabla de asignación' ).
+        lo_cols_det->get_column( 'MATNR' )->set_long_text( 'Material' ).
+        lo_cols_det->get_column( 'WERKS_REC' )->set_long_text( 'Centro Destino' ).
+        lo_cols_det->get_column( 'MENGE' )->set_long_text( 'Cantidad' ).
+        lo_cols_det->get_column( 'MEINS' )->set_long_text( 'Unidad de medida' ).
+        lo_cols_det->get_column( 'RESULT' )->set_long_text( 'Resultado' ).
+        lo_cols_det->get_column( 'MESSAGE' )->set_long_text( 'Mensaje SAP' ).
+      CATCH cx_salv_not_found.
+    ENDTRY.
+
+    lo_salv_det->get_display_settings( )->set_striped_pattern( abap_true ).
+
+    lo_salv_hdr->display( ).
+    lo_salv_det->display( ).
 
   ENDMETHOD.
 
