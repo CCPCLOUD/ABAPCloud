@@ -684,6 +684,8 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     DATA lt_fieldcat TYPE slis_t_fieldcat_alv.
     DATA ls_fc       TYPE slis_fieldcat_alv.
     DATA ls_layout   TYPE slis_layout_alv.
+    DATA lt_events   TYPE slis_t_event.
+    DATA ls_event    TYPE slis_alv_event.
 
     CLEAR ls_fc. ls_fc-fieldname = 'ALLOC_TABLE'. ls_fc-seltext_l = 'Tabla de asignación'. ls_fc-col_pos = 1. APPEND ls_fc TO lt_fieldcat.
     CLEAR ls_fc. ls_fc-fieldname = 'MATNR'.       ls_fc-seltext_l = 'Material'.            ls_fc-col_pos = 2. APPEND ls_fc TO lt_fieldcat.
@@ -696,12 +698,22 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     ls_layout-zebra             = abap_true.
     ls_layout-colwidth_optimize = abap_true.
 
+    " Registro explícito del evento TOP-OF-PAGE: en algunas versiones del
+    " FM, el parámetro i_callback_top_of_page por sí solo no es suficiente
+    " y el evento debe registrarse también en it_events para que el ALV
+    " Grid efectivamente invoque el FORM y muestre el bloque de cabecera.
+    CLEAR ls_event.
+    ls_event-name = slis_ev_top_of_page.
+    ls_event-form = 'TOP_OF_PAGE'.
+    APPEND ls_event TO lt_events.
+
     CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
       EXPORTING
         i_callback_program     = sy-repid
         i_callback_top_of_page = 'TOP_OF_PAGE'
         is_layout              = ls_layout
         it_fieldcat            = lt_fieldcat
+        it_events              = lt_events
         i_save                 = 'A'
       TABLES
         t_outtab               = result_det
