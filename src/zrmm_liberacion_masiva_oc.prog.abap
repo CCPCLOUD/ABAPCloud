@@ -330,7 +330,19 @@ FORM f_ejecutar_bapi
           purchaseorder = pv_ebeln
           po_rel_code   = pv_frgco
         TABLES
-          return        = lt_return.
+          return        = lt_return
+        EXCEPTIONS
+          OTHERS        = 1.
+
+      IF sy-subrc <> 0.
+        CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+        ps_log-semaforo     = gc_rojo.
+        ps_log-estatus      = 'Error'.
+        ps_log-mensaje_func = |Error al liberar OC { pv_ebeln } con código { pv_frgco }.|.
+        ps_log-mensaje_sap  = |{ sy-msgid } { sy-msgno }: | &&
+                              |{ sy-msgv1 } { sy-msgv2 } { sy-msgv3 } { sy-msgv4 }|.
+        RETURN.
+      ENDIF.
 
     CATCH cx_root INTO DATA(lx_error).
       CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
