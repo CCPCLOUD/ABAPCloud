@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_TRAN" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <RSTXT>Creación Masiva de Artículos (ARTMAS09)</RSTXT>
+   <TCODE>
+    <TCODE>ZMM_ARTICLE_CREATE</TCODE>
+    <PGMNA>ZRMM_MASS_ARTICLE_CREATE</PGMNA>
+    <DYPNO>1000</DYPNO>
+    <DFORM>1</DFORM>
+    <CINFO>E</CINFO>
+   </TCODE>
+  </asx:values>
+ </asx:abap>
+</abapGit>

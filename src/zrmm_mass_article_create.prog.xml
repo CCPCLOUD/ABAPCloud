@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_PROG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <PROGDIR>
+    <NAME>ZRMM_MASS_ARTICLE_CREATE</NAME>
+    <SUBC>1</SUBC>
+    <APPL>S</APPL>
+    <RSTAT>P</RSTAT>
+    <RMAND>100</RMAND>
+    <UCCHECK>X</UCCHECK>
+   </PROGDIR>
+   <TPOOL>
+    <item>
+     <ID>R</ID>
+     <ENTRY>Creación Masiva de Artículos - IDoc ARTMAS09 (P157)</ENTRY>
+     <LENGTH>52</LENGTH>
+    </item>
+    <item>
+     <KEY>001</KEY>
+     <ID>I</ID>
+     <ENTRY>Parámetros de carga</ENTRY>
+     <LENGTH>20</LENGTH>
+    </item>
+    <item>
+     <KEY>002</KEY>
+     <ID>I</ID>
+     <ENTRY>Opciones de ejecución</ENTRY>
+     <LENGTH>22</LENGTH>
+    </item>
+   </TPOOL>
+  </asx:values>
+ </asx:abap>
+</abapGit>
