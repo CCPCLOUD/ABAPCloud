@@ -25,7 +25,7 @@
 *& únicamente las TYPES de segmento (sección de tipos), el resto
 *& de la lógica funcional no cambia.
 *&---------------------------------------------------------------*
-REPORT zrmm_mass_article_create MESSAGE-ID zmm_article_create.
+REPORT zrmm_mass_article_create.
 
 TYPE-POOLS: icon.
 
