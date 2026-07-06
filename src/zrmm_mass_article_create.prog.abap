@@ -496,7 +496,7 @@ CLASS lcl_excel_reader IMPLEMENTATION.
 
     cl_gui_frontend_services=>gui_upload(
       EXPORTING
-        filename                = mv_file
+        filename                = CONV string( mv_file )
         filetype                = 'BIN'
       IMPORTING
         filelength              = lv_filelength
@@ -543,42 +543,37 @@ CLASS lcl_excel_reader IMPLEMENTATION.
 
   METHOD upload.
     read_frontend_file( ).
-    mo_xl_doc = cl_fdt_xl_spreadsheet=>factory( mv_xdata ).
+    CREATE OBJECT mo_xl_doc
+      EXPORTING
+        document_name = CONV string( mv_file )
+        xdocument     = mv_xdata.
   ENDMETHOD.
 
   METHOD get_sheet.
-    DATA: lt_itab TYPE REF TO data.
-    FIELD-SYMBOLS: <lt_itab> TYPE ANY TABLE,
-                    <ls_row>  TYPE any.
+    " NOTA: ET_TABLE de GET_ITAB_FROM_WORKSHEET entrega una tabla de
+    " filas, donde cada fila es a su vez una STRING_TABLE con el valor
+    " de cada celda en formato texto (una entrada por columna).
+    DATA: lt_raw TYPE STANDARD TABLE OF string_table.
 
     CLEAR rt_sheet.
 
     TRY.
-        CALL METHOD mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_sheet
+        CALL METHOD mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_worksheet
           EXPORTING
-            sheet_name        = iv_sheet_name
-            i_only_first_row  = abap_false
+            i_worksheet_name = iv_sheet_name
           IMPORTING
-            itab              = lt_itab.
+            et_table         = lt_raw.
       CATCH cx_fdt_excel_core.
         RETURN.
     ENDTRY.
 
-    ASSIGN lt_itab->* TO <lt_itab>.
-    CHECK <lt_itab> IS ASSIGNED.
-
     DATA(lv_index) = 0.
-    LOOP AT <lt_itab> ASSIGNING <ls_row>.
+    LOOP AT lt_raw INTO DATA(lt_row).
       lv_index = lv_index + 1.
       DATA(ls_sheet_row) = VALUE ty_excel_sheet_row( row_index = lv_index ).
 
-      DATA(lo_struct) = CAST cl_abap_structdescr(
-        cl_abap_typedescr=>describe_by_data( <ls_row> ) ).
-      LOOP AT lo_struct->components INTO DATA(ls_comp).
-        ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_row> TO FIELD-SYMBOL(<lv_cell>).
-        IF sy-subrc = 0.
-          APPEND CONV string( <lv_cell> ) TO ls_sheet_row-cells.
-        ENDIF.
+      LOOP AT lt_row INTO DATA(lv_cell).
+        APPEND lv_cell TO ls_sheet_row-cells.
       ENDLOOP.
 
       APPEND ls_sheet_row TO rt_sheet.
