@@ -550,12 +550,13 @@ CLASS lcl_excel_reader IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_sheet.
-    " GET_ITAB_FROM_SHEET es un método propio de CL_FDT_XL_SPREADSHEET
-    " (no de la interfaz) con parámetro RETURNING ITAB TYPE REF TO DATA:
-    " entrega una referencia genérica a una tabla cuya fila es una
-    " estructura dinámica (una componente por columna de la hoja), por
-    " lo que hay que recorrerla con RTTI para extraer cada celda como
-    " texto, sin conocer los nombres de columna en tiempo de compilación.
+    " IF_FDT_DOC_SPREADSHEET~GET_ITAB_FROM_WORKSHEET (público) entrega
+    " RETURNING ITAB TYPE REF TO DATA: una referencia genérica a una
+    " tabla cuya fila es una estructura dinámica (una componente por
+    " columna de la hoja), por lo que hay que recorrerla con RTTI para
+    " extraer cada celda como texto, sin conocer los nombres de columna
+    " en tiempo de compilación. (GET_ITAB_FROM_SHEET, el método propio
+    " de la clase con la misma firma, es protegido/privado.)
     DATA: lr_itab TYPE REF TO data.
     FIELD-SYMBOLS: <lt_itab> TYPE ANY TABLE,
                     <ls_row>  TYPE any.
@@ -563,7 +564,8 @@ CLASS lcl_excel_reader IMPLEMENTATION.
     CLEAR rt_sheet.
 
     TRY.
-        lr_itab = mo_xl_doc->get_itab_from_sheet( worksheet_name = iv_sheet_name ).
+        lr_itab = mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_worksheet(
+                    worksheet_name = iv_sheet_name ).
       CATCH cx_fdt_excel_core.
         RETURN.
     ENDTRY.
