@@ -1533,7 +1533,9 @@ FORM append_segment
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
 
-  DATA: ls_edidd TYPE edidd.
+  DATA: ls_edidd  TYPE edidd,
+        lr_data_x TYPE REF TO data.
+  FIELD-SYMBOLS: <ls_data_x> TYPE any.
 
   CLEAR ls_edidd.
   ls_edidd-segnam = iv_segnam.
@@ -1542,13 +1544,16 @@ FORM append_segment
 
   " Segmento de casilla de verificación (X) - marca los campos poblados
   " para indicar a SAP qué atributos crear (detalle técnico, 2.4.5).
-  DATA ls_data_x LIKE is_data.
-  ls_data_x = is_data.
-  PERFORM fill_x_segment CHANGING ls_data_x.
+  " CREATE DATA ... LIKE sí admite un origen de tipo genérico (a
+  " diferencia de DATA ... LIKE, que requiere un tipo estático).
+  CREATE DATA lr_data_x LIKE is_data.
+  ASSIGN lr_data_x->* TO <ls_data_x>.
+  <ls_data_x> = is_data.
+  PERFORM fill_x_segment CHANGING <ls_data_x>.
 
   CLEAR ls_edidd.
   ls_edidd-segnam = |{ iv_segnam }X|.
-  ls_edidd-sdata  = ls_data_x.
+  ls_edidd-sdata  = <ls_data_x>.
   APPEND ls_edidd TO ct_edidd.
 ENDFORM.
 
