@@ -1637,7 +1637,10 @@ FORM display_log.
   lo_display = lo_salv->get_display_settings( ).
   lo_display->set_striped_pattern( abap_true ).
 
-  lo_salv->get_sorts( )->add_sort( 'LINE_NUMBER' ).
+  TRY.
+      lo_salv->get_sorts( )->add_sort( 'LINE_NUMBER' ).
+    CATCH cx_salv_not_found cx_salv_existing cx_salv_data_error.
+  ENDTRY.
 
   TRY.
       lo_columns = lo_salv->get_columns( ).
@@ -1663,7 +1666,7 @@ FORM display_log.
       lo_column ?= lo_columns->get_column( 'MESSAGE' ).
       lo_column->set_long_text( 'Mensaje' ).
       lo_column->set_output_length( 100 ).
-    CATCH cx_salv_not_found.
+    CATCH cx_salv_not_found cx_salv_existing cx_salv_data_error.
   ENDTRY.
 
   PERFORM show_totals.
