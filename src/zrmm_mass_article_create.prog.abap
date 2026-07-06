@@ -1684,7 +1684,7 @@ FORM set_status_icons.
       WHEN gc_status-warning.
         <log>-status_icon = icon_yellow_light.
       WHEN gc_status-simul.
-        <log>-status_icon = icon_system_simulate.
+        <log>-status_icon = icon_led_inactive.
     ENDCASE.
   ENDLOOP.
 ENDFORM.
