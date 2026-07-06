@@ -550,31 +550,45 @@ CLASS lcl_excel_reader IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_sheet.
-    " NOTA: ET_TABLE de GET_ITAB_FROM_WORKSHEET entrega una tabla de
-    " filas, donde cada fila es a su vez una STRING_TABLE con el valor
-    " de cada celda en formato texto (una entrada por columna).
-    DATA: lt_raw TYPE STANDARD TABLE OF string_table.
+    " GET_ITAB_FROM_SHEET es un método propio de CL_FDT_XL_SPREADSHEET
+    " (no de la interfaz) con parámetro RETURNING ITAB TYPE REF TO DATA:
+    " entrega una referencia genérica a una tabla cuya fila es una
+    " estructura dinámica (una componente por columna de la hoja), por
+    " lo que hay que recorrerla con RTTI para extraer cada celda como
+    " texto, sin conocer los nombres de columna en tiempo de compilación.
+    DATA: lr_itab TYPE REF TO data.
+    FIELD-SYMBOLS: <lt_itab> TYPE ANY TABLE,
+                    <ls_row>  TYPE any.
 
     CLEAR rt_sheet.
 
     TRY.
-        CALL METHOD mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_worksheet
-          EXPORTING
-            worksheet_name   = iv_sheet_name
-          IMPORTING
-            et_table         = lt_raw.
+        lr_itab = mo_xl_doc->get_itab_from_sheet( worksheet_name = iv_sheet_name ).
       CATCH cx_fdt_excel_core.
         RETURN.
     ENDTRY.
 
+    CHECK lr_itab IS BOUND.
+    ASSIGN lr_itab->* TO <lt_itab>.
+    CHECK <lt_itab> IS ASSIGNED.
+
     DATA(lv_index) = 0.
-    LOOP AT lt_raw INTO DATA(lt_row).
+    LOOP AT <lt_itab> ASSIGNING <ls_row>.
       lv_index = lv_index + 1.
       DATA(ls_sheet_row) = VALUE ty_excel_sheet_row( row_index = lv_index ).
 
-      LOOP AT lt_row INTO DATA(lv_cell).
-        APPEND lv_cell TO ls_sheet_row-cells.
-      ENDLOOP.
+      DATA(lo_type) = cl_abap_typedescr=>describe_by_data( <ls_row> ).
+      IF lo_type->kind = cl_abap_typedescr=>kind_struct.
+        DATA(lo_struct) = CAST cl_abap_structdescr( lo_type ).
+        LOOP AT lo_struct->components INTO DATA(ls_comp).
+          ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_row> TO FIELD-SYMBOL(<lv_cell>).
+          IF sy-subrc = 0.
+            APPEND CONV string( <lv_cell> ) TO ls_sheet_row-cells.
+          ENDIF.
+        ENDLOOP.
+      ELSE.
+        APPEND CONV string( <ls_row> ) TO ls_sheet_row-cells.
+      ENDIF.
 
       APPEND ls_sheet_row TO rt_sheet.
     ENDLOOP.
