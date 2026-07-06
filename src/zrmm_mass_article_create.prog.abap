@@ -560,7 +560,7 @@ CLASS lcl_excel_reader IMPLEMENTATION.
     TRY.
         CALL METHOD mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_worksheet
           EXPORTING
-            i_worksheet_name = iv_sheet_name
+            worksheet_name   = iv_sheet_name
           IMPORTING
             et_table         = lt_raw.
       CATCH cx_fdt_excel_core.
@@ -686,6 +686,10 @@ ENDFORM.
 *& FORM parse_articulos (hoja 01_ARTICULOS)
 *&---------------------------------------------------------------*
 FORM parse_articulos USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '01_ARTICULOS' ).
   IF lt_sheet IS INITIAL.
     APPEND VALUE ty_log(
@@ -707,30 +711,29 @@ FORM parse_articulos USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    DATA(lv_material) = ``.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i1).
-    PERFORM cell_by_index USING ls_row lv_i1 CHANGING lv_material.
+    READ TABLE lt_idx INDEX 1 INTO lv_i.
+    PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
 
     DATA(ls_art) = VALUE ty_articulo( line_number = ls_row-row_index ).
     ls_art-material = lv_material.
 
-    READ TABLE lt_idx INDEX 2  INTO DATA(lv_i)  . PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_art-descripcion    = lv_v.
-    READ TABLE lt_idx INDEX 3  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-matl_type      = lv_v.
-    READ TABLE lt_idx INDEX 4  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-tipo_carga     = lv_v.
-    READ TABLE lt_idx INDEX 5  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-material_padre = lv_v.
-    READ TABLE lt_idx INDEX 6  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-matl_group     = lv_v.
-    READ TABLE lt_idx INDEX 7  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-base_uom       = lv_v.
-    READ TABLE lt_idx INDEX 8  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-char_prof      = lv_v.
-    READ TABLE lt_idx INDEX 9  INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-config_class   = lv_v.
-    READ TABLE lt_idx INDEX 10 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-valid_from     = lv_v.
-    READ TABLE lt_idx INDEX 11 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-tax_class      = lv_v.
-    READ TABLE lt_idx INDEX 12 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-modelo         = lv_v.
-    READ TABLE lt_idx INDEX 13 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-marca          = lv_v.
-    READ TABLE lt_idx INDEX 14 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-fashion_attr_1 = lv_v.
-    READ TABLE lt_idx INDEX 15 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-fashion_attr_2 = lv_v.
-    READ TABLE lt_idx INDEX 16 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-fashion_attr_3 = lv_v.
-    READ TABLE lt_idx INDEX 17 INTO lv_i        . PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.        ls_art-season_level   = lv_v.
+    READ TABLE lt_idx INDEX 2  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-descripcion    = lv_v.
+    READ TABLE lt_idx INDEX 3  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-matl_type      = lv_v.
+    READ TABLE lt_idx INDEX 4  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-tipo_carga     = lv_v.
+    READ TABLE lt_idx INDEX 5  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-material_padre = lv_v.
+    READ TABLE lt_idx INDEX 6  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-matl_group     = lv_v.
+    READ TABLE lt_idx INDEX 7  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-base_uom       = lv_v.
+    READ TABLE lt_idx INDEX 8  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-char_prof      = lv_v.
+    READ TABLE lt_idx INDEX 9  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-config_class   = lv_v.
+    READ TABLE lt_idx INDEX 10 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-valid_from     = lv_v.
+    READ TABLE lt_idx INDEX 11 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-tax_class      = lv_v.
+    READ TABLE lt_idx INDEX 12 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-modelo         = lv_v.
+    READ TABLE lt_idx INDEX 13 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-marca          = lv_v.
+    READ TABLE lt_idx INDEX 14 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-fashion_attr_1 = lv_v.
+    READ TABLE lt_idx INDEX 15 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-fashion_attr_2 = lv_v.
+    READ TABLE lt_idx INDEX 16 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-fashion_attr_3 = lv_v.
+    READ TABLE lt_idx INDEX 17 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-season_level   = lv_v.
 
     APPEND ls_art TO gt_articulos.
   ENDLOOP.
@@ -740,6 +743,10 @@ ENDFORM.
 *& FORM parse_centros (hoja 02_CENTROS)
 *&---------------------------------------------------------------*
 FORM parse_centros USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '02_CENTROS' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -752,21 +759,21 @@ FORM parse_centros USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_c) = VALUE ty_centro( material = lv_material ).
 
-    READ TABLE lt_idx INDEX 2  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_c-plant      = lv_v.
-    READ TABLE lt_idx INDEX 3  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-pur_group  = lv_v.
-    READ TABLE lt_idx INDEX 4  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-mrp_type   = lv_v.
-    READ TABLE lt_idx INDEX 5  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-plnd_delry = lv_v.
-    READ TABLE lt_idx INDEX 6  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-proc_type  = lv_v.
-    READ TABLE lt_idx INDEX 7  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-loadinggrp = lv_v.
-    READ TABLE lt_idx INDEX 8  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-availcheck = lv_v.
-    READ TABLE lt_idx INDEX 9  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-profit_ctr = lv_v.
-    READ TABLE lt_idx INDEX 10 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-countryori = lv_v.
-    READ TABLE lt_idx INDEX 11 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-distr_prof = lv_v.
-    READ TABLE lt_idx INDEX 12 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_c-neg_stocks = lv_v.
+    READ TABLE lt_idx INDEX 2  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-plant      = lv_v.
+    READ TABLE lt_idx INDEX 3  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-pur_group  = lv_v.
+    READ TABLE lt_idx INDEX 4  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-mrp_type   = lv_v.
+    READ TABLE lt_idx INDEX 5  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-plnd_delry = lv_v.
+    READ TABLE lt_idx INDEX 6  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-proc_type  = lv_v.
+    READ TABLE lt_idx INDEX 7  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-loadinggrp = lv_v.
+    READ TABLE lt_idx INDEX 8  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-availcheck = lv_v.
+    READ TABLE lt_idx INDEX 9  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-profit_ctr = lv_v.
+    READ TABLE lt_idx INDEX 10 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-countryori = lv_v.
+    READ TABLE lt_idx INDEX 11 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-distr_prof = lv_v.
+    READ TABLE lt_idx INDEX 12 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-neg_stocks = lv_v.
 
     APPEND ls_c TO gt_centros.
   ENDLOOP.
@@ -776,6 +783,10 @@ ENDFORM.
 *& FORM parse_almacenes (hoja 03_ALMACENES)
 *&---------------------------------------------------------------*
 FORM parse_almacenes USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '03_ALMACENES' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -784,11 +795,11 @@ FORM parse_almacenes USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_a) = VALUE ty_almacen( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_a-plant    = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_a-stge_loc = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_a-plant    = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_a-stge_loc = lv_v.
     APPEND ls_a TO gt_almacenes.
   ENDLOOP.
 ENDFORM.
@@ -797,6 +808,10 @@ ENDFORM.
 *& FORM parse_unidades_ean (hoja 04_UNIDADES_EAN)
 *&---------------------------------------------------------------*
 FORM parse_unidades_ean USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '04_UNIDADES_EAN' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -807,14 +822,14 @@ FORM parse_unidades_ean USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_u) = VALUE ty_unidad_ean( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_u-alt_unit  = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_u-numerator = lv_v.
-    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_u-denomintr = lv_v.
-    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_u-ean_upc   = lv_v.
-    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_u-ean_cat   = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-alt_unit  = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-numerator = lv_v.
+    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-denomintr = lv_v.
+    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_upc   = lv_v.
+    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_cat   = lv_v.
     APPEND ls_u TO gt_unidades_ean.
   ENDLOOP.
 ENDFORM.
@@ -823,6 +838,10 @@ ENDFORM.
 *& FORM parse_impuestos (hoja 05_IMPUESTOS)
 *&---------------------------------------------------------------*
 FORM parse_impuestos USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '05_IMPUESTOS' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -833,14 +852,14 @@ FORM parse_impuestos USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_t) = VALUE ty_impuesto( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_t-depcountry = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_t-tax_type_1 = lv_v.
-    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_t-taxclass_1 = lv_v.
-    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_t-tax_type_2 = lv_v.
-    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_t-taxclass_2 = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_t-depcountry = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_t-tax_type_1 = lv_v.
+    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_t-taxclass_1 = lv_v.
+    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_t-tax_type_2 = lv_v.
+    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_t-taxclass_2 = lv_v.
     APPEND ls_t TO gt_impuestos.
   ENDLOOP.
 ENDFORM.
@@ -849,6 +868,10 @@ ENDFORM.
 *& FORM parse_valoraciones (hoja 06_VALORACION)
 *&---------------------------------------------------------------*
 FORM parse_valoraciones USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '06_VALORACION' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -859,15 +882,15 @@ FORM parse_valoraciones USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_val) = VALUE ty_valoracion( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_val-val_area   = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_val-val_class  = lv_v.
-    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_val-price_ctrl = lv_v.
-    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_val-moving_pr  = lv_v.
-    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_val-std_price  = lv_v.
-    READ TABLE lt_idx INDEX 7 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_val-price_unit = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-val_area   = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-val_class  = lv_v.
+    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-price_ctrl = lv_v.
+    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-moving_pr  = lv_v.
+    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-std_price  = lv_v.
+    READ TABLE lt_idx INDEX 7 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_val-price_unit = lv_v.
     APPEND ls_val TO gt_valoraciones.
   ENDLOOP.
 ENDFORM.
@@ -876,6 +899,10 @@ ENDFORM.
 *& FORM parse_ventas (hoja 07_VENTAS_POS)
 *&---------------------------------------------------------------*
 FORM parse_ventas USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '07_VENTAS_POS' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -887,16 +914,16 @@ FORM parse_ventas USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_ve) = VALUE ty_venta( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_ve-sales_org    = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-distr_chan   = lv_v.
-    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-item_cat     = lv_v.
-    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-acct_assgt   = lv_v.
-    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-fecha_inicio = lv_v.
-    READ TABLE lt_idx INDEX 7 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-fecha_fin    = lv_v.
-    READ TABLE lt_idx INDEX 8 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ve-pr_ref_mat   = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-sales_org    = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-distr_chan   = lv_v.
+    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-item_cat     = lv_v.
+    READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-acct_assgt   = lv_v.
+    READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-fecha_inicio = lv_v.
+    READ TABLE lt_idx INDEX 7 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-fecha_fin    = lv_v.
+    READ TABLE lt_idx INDEX 8 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-pr_ref_mat   = lv_v.
     APPEND ls_ve TO gt_ventas.
   ENDLOOP.
 ENDFORM.
@@ -905,6 +932,10 @@ ENDFORM.
 *& FORM parse_caracteristicas (hoja 08_CARACTERISTICAS)
 *&---------------------------------------------------------------*
 FORM parse_caracteristicas USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '08_CARACTERISTICAS' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -913,11 +944,11 @@ FORM parse_caracteristicas USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_ch) = VALUE ty_caracteristica( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_ch-char_name  = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_ch-char_value = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ch-char_name  = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ch-char_value = lv_v.
     APPEND ls_ch TO gt_caracteristicas.
   ENDLOOP.
 ENDFORM.
@@ -926,6 +957,10 @@ ENDFORM.
 *& FORM parse_variantes (hoja 09_VARIANTES)
 *&---------------------------------------------------------------*
 FORM parse_variantes USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i         TYPE i,
+        lv_v         TYPE string,
+        lv_generico  TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '09_VARIANTES' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -934,10 +969,10 @@ FORM parse_variantes USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_generico).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_generico.
     CHECK lv_generico IS NOT INITIAL.
     DATA(ls_va) = VALUE ty_variante( material_generico = lv_generico ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_va-material_variante = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_va-material_variante = lv_v.
     APPEND ls_va TO gt_variantes.
   ENDLOOP.
 ENDFORM.
@@ -946,6 +981,10 @@ ENDFORM.
 *& FORM parse_temporadas (hoja 10_TEMPORADAS)
 *&---------------------------------------------------------------*
 FORM parse_temporadas USING io_reader TYPE REF TO lcl_excel_reader.
+  DATA: lv_i        TYPE i,
+        lv_v        TYPE string,
+        lv_material TYPE string.
+
   DATA(lt_sheet) = io_reader->get_sheet( '10_TEMPORADAS' ).
   CHECK lt_sheet IS NOT INITIAL.
 
@@ -954,11 +993,11 @@ FORM parse_temporadas USING io_reader TYPE REF TO lcl_excel_reader.
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
   LOOP AT lt_sheet INTO DATA(ls_row) FROM 8.
-    READ TABLE lt_idx INDEX 1 INTO DATA(lv_i). PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_material).
+    READ TABLE lt_idx INDEX 1 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_material.
     CHECK lv_material IS NOT INITIAL.
     DATA(ls_te) = VALUE ty_temporada( material = lv_material ).
-    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING DATA(lv_v). ls_te-season_yr = lv_v.
-    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v.       ls_te-season    = lv_v.
+    READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_te-season_yr = lv_v.
+    READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_te-season    = lv_v.
     APPEND ls_te TO gt_temporadas.
   ENDLOOP.
 ENDFORM.
