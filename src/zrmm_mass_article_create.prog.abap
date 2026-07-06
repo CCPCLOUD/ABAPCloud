@@ -1006,7 +1006,7 @@ ENDFORM.
 *& FORM validate_data - reglas de validación (2.4.6)
 *&---------------------------------------------------------------*
 FORM validate_data.
-  DATA: lt_seen TYPE STANDARD TABLE OF c LENGTH 40 WITH EMPTY KEY.
+  DATA: lt_seen TYPE STANDARD TABLE OF string WITH EMPTY KEY.
 
   LOOP AT gt_articulos ASSIGNING FIELD-SYMBOL(<art>).
     DATA(lv_error) = ``.
