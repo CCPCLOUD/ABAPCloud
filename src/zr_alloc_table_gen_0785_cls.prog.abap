@@ -58,6 +58,23 @@ CLASS lcl_alloc_table_gen DEFINITION.
            END OF ty_result_detail.
     TYPES ty_result_details TYPE STANDARD TABLE OF ty_result_detail WITH EMPTY KEY.
 
+    " Log de errores: todos los mensajes devueltos por la BAPI, uno por
+    " cada registro afectado. Se graba en la tabla Z ZTMM_ALLOC_LOG.
+    TYPES: BEGIN OF ty_log_entry,
+             lifnr     TYPE lifnr,      " Proveedor
+             eindt     TYPE dats,       " Fecha de Entrega
+             ekorg     TYPE ekorg,      " Organización de Compras
+             ekgrp     TYPE ekgrp,      " Grupo de Compras
+             werks_sup TYPE werks_d,    " Centro Suministrador
+             matnr     TYPE matnr,      " Material
+             werks_rec TYPE werks_d,    " Centro Destino
+             menge     TYPE menge_d,    " Cantidad
+             meins     TYPE meins,      " Unidad de Medida
+             msgty     TYPE bapi_mtype, " Tipo de mensaje
+             msgtxt    TYPE bapi_msg,   " Mensaje de error
+           END OF ty_log_entry.
+    TYPES ty_log_entries TYPE STANDARD TABLE OF ty_log_entry WITH EMPTY KEY.
+
     " Referencia a la instancia activa, usada por el FORM global de
     " TOP-OF-PAGE (callback de REUSE_ALV_GRID_DISPLAY) para poder
     " invocar de vuelta el método de instancia que imprime la cabecera.
@@ -84,6 +101,7 @@ CLASS lcl_alloc_table_gen DEFINITION.
     DATA val_errors TYPE ty_validation_errors.
     DATA result_hdr TYPE ty_result_headers.
     DATA result_det TYPE ty_result_details.
+    DATA log_entries TYPE ty_log_entries.
 
     "! Carga el Excel a una tabla interna con la misma estructura del layout.
     "! @parameter r_success | 'X' si el archivo se pudo leer y convertir.
@@ -123,6 +141,9 @@ CLASS lcl_alloc_table_gen DEFINITION.
     "! Despliega el ALV de 2 niveles (cabecera / detalle) con el resultado final.
     METHODS display_results.
 
+    "! Graba en ZTMM_ALLOC_LOG todos los mensajes acumulados en log_entries.
+    METHODS save_log.
+
 
 ENDCLASS.
 
@@ -146,6 +167,8 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     validate_data( ).
 
     process_groups( ).
+
+    save_log( ).
 
     display_results( ).
 
@@ -589,6 +612,7 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
     DATA lv_alloc_table TYPE abeln.
     DATA lv_return_code TYPE sysubrc.
     DATA lv_msg_text    TYPE string.
+    DATA lt_messages    TYPE rfc_alloc_messages_out_tty.
 
     CALL FUNCTION 'RFC_CREATE_ALLOCATION_TABLE_S4'
       EXPORTING
@@ -600,7 +624,8 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         ex_return_code           = lv_return_code
       TABLES
         im_t_rfc_alloc_items_in  = lt_items
-        im_t_rfc_alloc_stores_in = lt_stores.
+        im_t_rfc_alloc_stores_in = lt_stores
+        ex_t_rfc_alloc_messages  = lt_messages.
 
     " Capturar el mensaje exacto devuelto por el FM (sy-msg* tras la llamada RFC)
     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
@@ -628,6 +653,45 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
       c_header-error_recs   = c_header-total_recs.
     ENDIF.
 
+    " -----------------------------------------------------------------------
+    " Log de errores: se graba TODO mensaje devuelto por la BAPI
+    " (tabla ex_t_rfc_alloc_messages), uno por cada registro del grupo.
+    " -----------------------------------------------------------------------
+    IF lv_success = abap_false.
+      LOOP AT lt_messages INTO DATA(ls_msg).
+        LOOP AT i_lines INTO DATA(ls_log_line).
+          APPEND VALUE ty_log_entry(
+            lifnr     = ls_log_line-lifnr
+            eindt     = ls_log_line-eindt
+            ekorg     = ls_log_line-ekorg
+            ekgrp     = ls_log_line-ekgrp
+            werks_sup = ls_log_line-werks_sup
+            matnr     = ls_log_line-matnr
+            werks_rec = ls_log_line-werks_rec
+            menge     = ls_log_line-menge
+            meins     = ls_log_line-meins
+            msgty     = ls_msg-type
+            msgtxt    = ls_msg-message ) TO log_entries.
+        ENDLOOP.
+      ENDLOOP.
+      IF lt_messages IS INITIAL.
+        LOOP AT i_lines INTO DATA(ls_log_line2).
+          APPEND VALUE ty_log_entry(
+            lifnr     = ls_log_line2-lifnr
+            eindt     = ls_log_line2-eindt
+            ekorg     = ls_log_line2-ekorg
+            ekgrp     = ls_log_line2-ekgrp
+            werks_sup = ls_log_line2-werks_sup
+            matnr     = ls_log_line2-matnr
+            werks_rec = ls_log_line2-werks_rec
+            menge     = ls_log_line2-menge
+            meins     = ls_log_line2-meins
+            msgty     = 'E'
+            msgtxt    = lv_msg_text ) TO log_entries.
+        ENDLOOP.
+      ENDIF.
+    ENDIF.
+
     LOOP AT i_lines INTO DATA(ls_result_line).
       APPEND VALUE ty_result_detail(
         group_id    = i_group_id
@@ -637,11 +701,49 @@ CLASS lcl_alloc_table_gen IMPLEMENTATION.
         menge       = ls_result_line-menge
         meins       = ls_result_line-meins
         result      = COND char6( WHEN lv_success = abap_true THEN 'OK' ELSE 'ERROR' )
-        message     = lv_msg_text
+        message     = COND string( WHEN lv_success = abap_true THEN lv_msg_text
+                                    ELSE 'Revisar Log de errores' )
         coltab      = VALUE #( ( fieldname = 'RESULT'
                                   color-col = COND #( WHEN lv_success = abap_true THEN 5 ELSE 6 )
                                   color-int = 1 ) ) ) TO c_details.
     ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD save_log.
+
+    IF log_entries IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    DATA lt_db_log TYPE STANDARD TABLE OF ztmm_alloc_log.
+    DATA lv_lognr  TYPE zmm_alloc_lognr.
+
+    SELECT SINGLE MAX( lognr ) FROM ztmm_alloc_log INTO lv_lognr.
+
+    LOOP AT log_entries INTO DATA(ls_log).
+      lv_lognr = lv_lognr + 1.
+      APPEND VALUE ztmm_alloc_log(
+        mandt     = sy-mandt
+        lognr     = lv_lognr
+        erdat     = sy-datum
+        erzet     = sy-uzeit
+        ernam     = sy-uname
+        lifnr     = ls_log-lifnr
+        eindt     = ls_log-eindt
+        ekorg     = ls_log-ekorg
+        ekgrp     = ls_log-ekgrp
+        werks_sup = ls_log-werks_sup
+        matnr     = ls_log-matnr
+        werks_rec = ls_log-werks_rec
+        menge     = ls_log-menge
+        meins     = ls_log-meins
+        msgty     = ls_log-msgty
+        msgtxt    = ls_log-msgtxt ) TO lt_db_log.
+    ENDLOOP.
+
+    INSERT ztmm_alloc_log FROM TABLE lt_db_log.
 
   ENDMETHOD.
 
