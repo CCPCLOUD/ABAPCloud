@@ -3,19 +3,13 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <PROGDIR>
-    <NAME>ZSOX_UPD_USR02_PA0105</NAME>
-    <SUBC>1</SUBC>
+    <NAME>ZHRRE_UPD_USR02_PA0105_F01</NAME>
+    <SUBC>I</SUBC>
     <RLOAD>E</RLOAD>
     <FIXPT>X</FIXPT>
     <UCCHECK>X</UCCHECK>
    </PROGDIR>
-   <TPOOL>
-    <item>
-     <ID>R</ID>
-     <ENTRY>Actualizacion USR02-ACCNT y PA0105 (SOX)</ENTRY>
-     <LENGTH>41</LENGTH>
-    </item>
-   </TPOOL>
+   <TPOOL/>
   </asx:values>
  </asx:abap>
 </abapGit>

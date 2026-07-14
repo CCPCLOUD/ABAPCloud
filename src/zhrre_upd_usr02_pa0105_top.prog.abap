@@ -1,0 +1,46 @@
+*----------------------------------------------------------------------
+*                    Report List Information
+*----------------------------------------------------------------------
+* Program name          : ZHRRE_UPD_USR02_PA0105
+* Include name           : ZHRRE_UPD_USR02_PA0105_TOP
+* Functionality         : Declaraciones globales (TYPES / DATA)
+* Functional Consultant: : <Nombre Consultor Funcional>
+* Abap Consultant       : <Nombre Consultor ABAP>
+* Creation Date         : 2026.07.14
+* Ticket                 : ######
+*----------------------------------------------------------------------
+*                       Modification Log
+*----------------------------------------------------------------------
+* Description            : <Objetivo del cambio>
+* Functional Consultant: : <Nombre Consultor Funcional>
+* Abap Consultant        : <Nombre Consultor ABAP>
+* Modification date      : YYYY.MM.DD
+* Ticket                 : ######
+*----------------------------------------------------------------------
+
+*----------------------------------------------------------------------
+* Types
+*----------------------------------------------------------------------
+TYPES: BEGIN OF ty_usr02_pa0105,
+         bname TYPE usr02-bname,
+         accnt TYPE usr02-accnt,
+         pernr TYPE pa0105-pernr,
+       END OF ty_usr02_pa0105.
+
+TYPES: BEGIN OF ty_netuser,
+         wikey TYPE zsox_netuser-wikey,
+         adid  TYPE zsox_netuser-adid,
+       END OF ty_netuser.
+
+*----------------------------------------------------------------------
+* Internal tables / Structures / Variables
+*----------------------------------------------------------------------
+DATA: gt_usr02_pa0105 TYPE STANDARD TABLE OF ty_usr02_pa0105,
+      gs_usr02_pa0105 TYPE ty_usr02_pa0105,
+      gt_netuser      TYPE STANDARD TABLE OF ty_netuser,
+      gs_netuser      TYPE ty_netuser,
+      gs_pa0105       TYPE pa0105,
+      gv_updated_1    TYPE i,
+      gv_updated_2    TYPE i,
+      gv_created_2    TYPE i,
+      gv_errors       TYPE i.

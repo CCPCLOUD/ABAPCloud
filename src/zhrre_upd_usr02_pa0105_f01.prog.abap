@@ -1,8 +1,38 @@
+*----------------------------------------------------------------------
+*                    Report List Information
+*----------------------------------------------------------------------
+* Program name          : ZHRRE_UPD_USR02_PA0105
+* Include name           : ZHRRE_UPD_USR02_PA0105_F01
+* Functionality         : Rutinas FORM del programa
+* Functional Consultant: : <Nombre Consultor Funcional>
+* Abap Consultant       : <Nombre Consultor ABAP>
+* Creation Date         : 2026.07.14
+* Ticket                 : ######
+*----------------------------------------------------------------------
+*                       Modification Log
+*----------------------------------------------------------------------
+* Description            : <Objetivo del cambio>
+* Functional Consultant: : <Nombre Consultor Funcional>
+* Abap Consultant        : <Nombre Consultor ABAP>
+* Modification date      : YYYY.MM.DD
+* Ticket                 : ######
+*----------------------------------------------------------------------
+
 *&---------------------------------------------------------------------*
-*& Include ZSOX_UPD_USR02_PA0105_F01
+*&      Form  MAIN
 *&---------------------------------------------------------------------*
-*& Rutinas FORM
-*&---------------------------------------------------------------------*
+FORM main.
+
+* Actualiza USR02-ACCNT desde PA0105 (SUBTY 0001)
+  PERFORM update_usr02_accnt.
+
+* Actualiza/crea PA0105 (SUBTY 0010) desde ZSOX_NETUSER
+  PERFORM update_pa0105_subty_0010.
+
+* Muestra el resumen de resultados
+  PERFORM display_results.
+
+ENDFORM.
 
 *&---------------------------------------------------------------------*
 *&      Form  UPDATE_USR02_ACCNT
@@ -173,5 +203,17 @@ FORM update_pa0105_subty_0010.
     ENDIF.
 
   ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_RESULTS
+*&---------------------------------------------------------------------*
+FORM display_results.
+
+  WRITE: / 'USR02-ACCNT actualizados      :', gv_updated_1.
+  WRITE: / 'PA0105 (0010) actualizados    :', gv_updated_2.
+  WRITE: / 'PA0105 (0010) creados         :', gv_created_2.
+  WRITE: / 'Errores                       :', gv_errors.
 
 ENDFORM.
