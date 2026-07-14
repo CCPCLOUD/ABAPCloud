@@ -469,7 +469,10 @@ CLASS lcl_excel_reader DEFINITION.
         IMPORTING iv_file TYPE rlgrap-filename,
 
       upload
-        RAISING cx_fdt_excel_core,
+        RETURNING VALUE(rv_ok) TYPE abap_bool,
+
+      get_last_error
+        RETURNING VALUE(rv_msg) TYPE string,
 
       get_sheet
         IMPORTING iv_sheet_name     TYPE string
@@ -478,11 +481,12 @@ CLASS lcl_excel_reader DEFINITION.
   PRIVATE SECTION.
     DATA: mv_file      TYPE rlgrap-filename,
           mo_xl_doc    TYPE REF TO cl_fdt_xl_spreadsheet,
-          mv_xdata     TYPE xstring.
+          mv_xdata     TYPE xstring,
+          mv_error_msg TYPE string.
 
     METHODS:
       read_frontend_file
-        RAISING cx_fdt_excel_core.
+        RETURNING VALUE(rv_ok) TYPE abap_bool.
 ENDCLASS.
 
 CLASS lcl_excel_reader IMPLEMENTATION.
@@ -490,9 +494,15 @@ CLASS lcl_excel_reader IMPLEMENTATION.
     mv_file = iv_file.
   ENDMETHOD.
 
+  METHOD get_last_error.
+    rv_msg = mv_error_msg.
+  ENDMETHOD.
+
   METHOD read_frontend_file.
-    DATA: lt_data_tab TYPE STANDARD TABLE OF x255,
+    DATA: lt_data_tab   TYPE STANDARD TABLE OF x255,
           lv_filelength TYPE i.
+
+    rv_ok = abap_false.
 
     cl_gui_frontend_services=>gui_upload(
       EXPORTING
@@ -523,7 +533,17 @@ CLASS lcl_excel_reader IMPLEMENTATION.
         error_no_gui                = 18
         OTHERS                      = 19 ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE cx_fdt_excel_core.
+      mv_error_msg =
+        |No fue posible leer el archivo del frontend (GUI_UPLOAD sy-subrc={ sy-subrc }). | &&
+        |Verifique que el archivo no esté bloqueado por Windows (clic derecho > Propiedades > | &&
+        |Desbloquear) ni sea un archivo de OneDrive/red aún no descargado localmente (ábralo | &&
+        |una vez y guárdelo en una carpeta local, p. ej. C:\temp).|.
+      RETURN.
+    ENDIF.
+
+    IF lv_filelength = 0.
+      mv_error_msg = 'El archivo seleccionado se leyó con 0 bytes de contenido.'.
+      RETURN.
     ENDIF.
 
     CALL FUNCTION 'SCMS_BINARY_TO_XSTRING'
@@ -537,16 +557,30 @@ CLASS lcl_excel_reader IMPLEMENTATION.
         failed       = 1
         OTHERS       = 2.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE cx_fdt_excel_core.
+      mv_error_msg = |No fue posible convertir el archivo a binario (SCMS_BINARY_TO_XSTRING sy-subrc={ sy-subrc }).|.
+      RETURN.
     ENDIF.
+
+    rv_ok = abap_true.
   ENDMETHOD.
 
   METHOD upload.
-    read_frontend_file( ).
-    CREATE OBJECT mo_xl_doc
-      EXPORTING
-        document_name = CONV string( mv_file )
-        xdocument     = mv_xdata.
+    rv_ok = abap_false.
+
+    IF read_frontend_file( ) = abap_false.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        CREATE OBJECT mo_xl_doc
+          EXPORTING
+            document_name = CONV string( mv_file )
+            xdocument     = mv_xdata.
+        rv_ok = abap_true.
+      CATCH cx_root INTO DATA(lx_error).
+        mv_error_msg = |El motor de lectura de Excel (CL_FDT_XL_SPREADSHEET) rechazó el archivo: | &&
+                       lx_error->get_text( ).
+    ENDTRY.
   ENDMETHOD.
 
   METHOD get_sheet.
@@ -638,17 +672,15 @@ ENDFORM.
 FORM load_excel_data.
   DATA(lo_reader) = NEW lcl_excel_reader( p_file ).
 
-  TRY.
-      lo_reader->upload( ).
-    CATCH cx_fdt_excel_core.
-      APPEND VALUE ty_log(
-        status       = gc_status-error
-        message_type = 'E'
-        message      = 'No fue posible abrir/leer el archivo Excel seleccionado (formato .xlsx inválido o corrupto).'
-        uname        = sy-uname
-        creation_date = sy-datum ) TO gt_log.
-      RETURN.
-  ENDTRY.
+  IF lo_reader->upload( ) = abap_false.
+    APPEND VALUE ty_log(
+      status        = gc_status-error
+      message_type  = 'E'
+      message       = lo_reader->get_last_error( )
+      uname         = sy-uname
+      creation_date = sy-datum ) TO gt_log.
+    RETURN.
+  ENDIF.
 
   PERFORM parse_articulos       USING lo_reader.
   PERFORM parse_centros         USING lo_reader.
