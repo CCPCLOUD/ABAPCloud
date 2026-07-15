@@ -651,7 +651,8 @@ DATA:
   gt_variantes      TYPE ty_t_variante,
   gt_temporadas     TYPE ty_t_temporada,
   gt_log            TYPE ty_t_log,
-  gv_stop_execution TYPE abap_bool.
+  gv_stop_execution TYPE abap_bool,
+  gt_unmapped_flds  TYPE STANDARD TABLE OF string WITH EMPTY KEY.
 
 *&---------------------------------------------------------------*
 *& FORM main - orquesta el flujo completo
@@ -668,7 +669,32 @@ FORM main.
     PERFORM process_records.
   ENDIF.
 
+  PERFORM report_unmapped_fields.
   PERFORM display_log.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM report_unmapped_fields - agrega al log un resumen de
+*&                               segmentos/campos que no calzaron por
+*&                               nombre contra la estructura real del
+*&                               sistema (ver MAP_TO_REAL_SEGMENT).
+*&                               Corre tanto en simulación como en
+*&                               modo real: es la forma de confirmar,
+*&                               sin revisar manualmente WE30/SE11,
+*&                               si los nombres usados en el programa
+*&                               son los correctos para este sistema.
+*&---------------------------------------------------------------*
+FORM report_unmapped_fields.
+  CHECK gt_unmapped_flds IS NOT INITIAL.
+
+  DATA(lv_detalle) = CONCAT_LINES_OF( table = gt_unmapped_flds sep = ' | ' ).
+
+  APPEND VALUE ty_log(
+    status        = gc_status-warning
+    message_type  = 'W'
+    message       = |Revisar nombres de segmento/campo (no coinciden con la estructura real): { lv_detalle }|
+    creation_date = sy-datum
+    uname         = sy-uname ) TO gt_log.
 ENDFORM.
 
 *&---------------------------------------------------------------*
@@ -1172,10 +1198,27 @@ ENDFORM.
 *& FORM simulate_records - modo simulación (no genera IDoc real)
 *&---------------------------------------------------------------*
 FORM simulate_records.
+  DATA: lt_edidd_dummy  TYPE STANDARD TABLE OF edidd,
+        lv_header_matnr TYPE c LENGTH 40,
+        lv_data_matnr   TYPE c LENGTH 40.
+
   LOOP AT gt_articulos INTO DATA(ls_art) WHERE is_valid = abap_true.
     IF gv_stop_execution = abap_true.
       EXIT.
     ENDIF.
+
+    " La simulación arma los segmentos igual que el modo real (sin
+    " llamar a MASTER_IDOC_DISTRIBUTE), para que MAP_TO_REAL_SEGMENT
+    " valide de una vez si los nombres de segmento/campo calzan contra
+    " la estructura real del sistema, sin crear IDocs de verdad.
+    PERFORM get_header_and_data_matnr
+      USING ls_art
+      CHANGING lv_header_matnr lv_data_matnr.
+    CLEAR lt_edidd_dummy.
+    PERFORM fill_segments
+      USING ls_art lv_header_matnr lv_data_matnr
+      CHANGING lt_edidd_dummy.
+
     APPEND VALUE ty_log(
       status        = gc_status-simul
       line_number   = ls_art-line_number
@@ -1202,6 +1245,27 @@ FORM process_records.
 ENDFORM.
 
 *&---------------------------------------------------------------*
+*& FORM get_header_and_data_matnr - resuelve material de cabecera
+*&                                  (MATHEAD) y material de datos
+*&                                  según regla 2.4.4: tipo 02 ->
+*&                                  cabecera = genérico, datos =
+*&                                  variante.
+*&---------------------------------------------------------------*
+FORM get_header_and_data_matnr
+  USING    is_art          TYPE ty_articulo
+  CHANGING cv_header_matnr TYPE c
+           cv_data_matnr   TYPE c.
+
+  IF is_art-tipo_carga = gc_cat_variante.
+    cv_header_matnr = is_art-material_padre.
+    cv_data_matnr   = is_art-material.
+  ELSE.
+    cv_header_matnr = is_art-material.
+    cv_data_matnr   = is_art-material.
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------*
 *& FORM build_and_send_idoc - construye segmentos ARTMAS09 y
 *&                            los envía vía MASTER_IDOC_DISTRIBUTE
 *&---------------------------------------------------------------*
@@ -1212,15 +1276,9 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
         lv_header_matnr TYPE c LENGTH 40,
         lv_data_matnr   TYPE c LENGTH 40.
 
-  " Determinación de material de cabecera (MATHEAD) y material de datos
-  " según regla 2.4.4: tipo 02 -> cabecera = genérico, datos = variante.
-  IF is_art-tipo_carga = gc_cat_variante.
-    lv_header_matnr = is_art-material_padre.
-    lv_data_matnr   = is_art-material.
-  ELSE.
-    lv_header_matnr = is_art-material.
-    lv_data_matnr   = is_art-material.
-  ENDIF.
+  PERFORM get_header_and_data_matnr
+    USING is_art
+    CHANGING lv_header_matnr lv_data_matnr.
 
   PERFORM fill_segments
     USING is_art lv_header_matnr lv_data_matnr
@@ -1652,6 +1710,7 @@ FORM map_to_real_segment
       " La estructura DDIC del segmento no se encontró con ese nombre
       " exacto en el sistema; se usa el layout local como respaldo,
       " con el riesgo de desalineación ya conocido.
+      PERFORM register_unmapped USING |{ iv_segnam }: estructura no encontrada en el sistema|.
       cv_sdata = is_source.
       RETURN.
   ENDTRY.
@@ -1665,11 +1724,28 @@ FORM map_to_real_segment
     ASSIGN COMPONENT ls_comp-name OF STRUCTURE is_source TO FIELD-SYMBOL(<lv_src>).
     CHECK sy-subrc = 0.
     ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_real> TO FIELD-SYMBOL(<lv_dst>).
-    CHECK sy-subrc = 0.
+    IF sy-subrc <> 0.
+      PERFORM register_unmapped USING |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
+      CONTINUE.
+    ENDIF.
     <lv_dst> = <lv_src>.
   ENDLOOP.
 
   cv_sdata = <ls_real>.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM register_unmapped - acumula (sin duplicar) avisos de campos
+*&                          o segmentos que no calzaron contra la
+*&                          estructura real del sistema, para que el
+*&                          usuario los vea en el log ALV en vez de
+*&                          perder datos en silencio.
+*&---------------------------------------------------------------*
+FORM register_unmapped USING iv_msg TYPE string.
+  READ TABLE gt_unmapped_flds TRANSPORTING NO FIELDS WITH KEY table_line = iv_msg.
+  IF sy-subrc <> 0.
+    APPEND iv_msg TO gt_unmapped_flds.
+  ENDIF.
 ENDFORM.
 
 *&---------------------------------------------------------------*
