@@ -1604,7 +1604,7 @@ FORM append_segment
 
   CLEAR ls_edidd.
   ls_edidd-segnam = iv_segnam.
-  ls_edidd-sdata  = is_data.
+  PERFORM map_to_real_segment USING iv_segnam is_data CHANGING ls_edidd-sdata.
   APPEND ls_edidd TO ct_edidd.
 
   " Segmento de casilla de verificación (X) - marca los campos poblados
@@ -1618,8 +1618,58 @@ FORM append_segment
 
   CLEAR ls_edidd.
   ls_edidd-segnam = |{ iv_segnam }X|.
-  ls_edidd-sdata  = <ls_data_x>.
+  PERFORM map_to_real_segment USING ls_edidd-segnam <ls_data_x> CHANGING ls_edidd-sdata.
   APPEND ls_edidd TO ct_edidd.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM map_to_real_segment - traslada los valores desde nuestra
+*&                            estructura local (TYPES ty_e1bpe1...,
+*&                            usadas solo para ordenar la lógica de
+*&                            negocio) hacia la estructura DDIC REAL
+*&                            del segmento en el sistema destino
+*&                            (mismo nombre técnico que el segmento),
+*&                            copiando por NOMBRE de campo. Esto evita
+*&                            que un MOVE de bytes crudos (offsets)
+*&                            desalinee los campos cuando la longitud
+*&                            real de un campo difiere de la asumida
+*&                            localmente (causa de valores "corridos"
+*&                            o mezclados entre campos vecinos).
+*&---------------------------------------------------------------*
+FORM map_to_real_segment
+  USING    iv_segnam TYPE edidd-segnam
+           is_source TYPE any
+  CHANGING cv_sdata  TYPE edidd-sdata.
+
+  DATA: lr_real TYPE REF TO data.
+  FIELD-SYMBOLS: <ls_real> TYPE any.
+
+  CLEAR cv_sdata.
+
+  TRY.
+      CREATE DATA lr_real TYPE (iv_segnam).
+    CATCH cx_root.
+      " La estructura DDIC del segmento no se encontró con ese nombre
+      " exacto en el sistema; se usa el layout local como respaldo,
+      " con el riesgo de desalineación ya conocido.
+      cv_sdata = is_source.
+      RETURN.
+  ENDTRY.
+
+  ASSIGN lr_real->* TO <ls_real>.
+
+  DATA(lo_source_struct) = CAST cl_abap_structdescr(
+    cl_abap_typedescr=>describe_by_data( is_source ) ).
+
+  LOOP AT lo_source_struct->components INTO DATA(ls_comp).
+    ASSIGN COMPONENT ls_comp-name OF STRUCTURE is_source TO FIELD-SYMBOL(<lv_src>).
+    CHECK sy-subrc = 0.
+    ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_real> TO FIELD-SYMBOL(<lv_dst>).
+    CHECK sy-subrc = 0.
+    <lv_dst> = <lv_src>.
+  ENDLOOP.
+
+  cv_sdata = <ls_real>.
 ENDFORM.
 
 *&---------------------------------------------------------------*
