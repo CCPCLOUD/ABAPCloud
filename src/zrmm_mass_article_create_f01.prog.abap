@@ -230,14 +230,16 @@ ENDFORM.
 FORM report_unmapped_fields.
   CHECK gt_unmapped_flds IS NOT INITIAL.
 
-  DATA(lv_detalle) = CONCAT_LINES_OF( table = gt_unmapped_flds sep = ' | ' ).
-
-  APPEND VALUE ty_log(
-    status        = gc_status-warning
-    message_type  = 'W'
-    message       = |Revisar nombres de segmento/campo (no coinciden con la estructura real): { lv_detalle }|
-    creation_date = sy-datum
-    uname         = sy-uname ) TO gt_log.
+  " Una fila de log por cada entrada: el campo MESSAGE (220 caracteres)
+  " no alcanza para concatenar todas en un solo mensaje sin truncarlas.
+  LOOP AT gt_unmapped_flds INTO DATA(lv_unmapped).
+    APPEND VALUE ty_log(
+      status        = gc_status-warning
+      message_type  = 'W'
+      message       = |Revisar nombre de segmento/campo (no coincide con la estructura real): { lv_unmapped }|
+      creation_date = sy-datum
+      uname         = sy-uname ) TO gt_log.
+  ENDLOOP.
 ENDFORM.
 
 *&---------------------------------------------------------------*
