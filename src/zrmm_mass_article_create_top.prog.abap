@@ -2,10 +2,11 @@
 *& Include ZRMM_MASS_ARTICLE_CREATE_TOP
 *&---------------------------------------------------------------*
 *& Declaraciones globales: tipos, constantes, pantalla de
-*& selección, clases locales de soporte y datos globales del
-*& programa ZRMM_MASS_ARTICLE_CREATE.
+*& selección, definición de clases locales de soporte (la
+*& implementación va en el include F01: un include TOP solo puede
+*& contener declaraciones, no CLASS...IMPLEMENTATION) y datos
+*& globales del programa ZRMM_MASS_ARTICLE_CREATE.
 *&---------------------------------------------------------------*
-TYPE-POOLS: icon.
 
 *&---------------------------------------------------------------*
 *& Constantes generales
@@ -395,13 +396,7 @@ CLASS lcl_util DEFINITION.
         RETURNING VALUE(rv_result) TYPE string.
 ENDCLASS.
 
-CLASS lcl_util IMPLEMENTATION.
-  METHOD normalize_header.
-    rv_result = iv_header.
-    REPLACE ALL OCCURRENCES OF ` ` IN rv_result WITH ``.
-    rv_result = to_upper( rv_result ).
-  ENDMETHOD.
-ENDCLASS.
+
 
 *&---------------------------------------------------------------*
 *& Clase: lectura de archivo Excel (.xlsx) local
@@ -431,148 +426,6 @@ CLASS lcl_excel_reader DEFINITION.
     METHODS:
       read_frontend_file
         RETURNING VALUE(rv_ok) TYPE abap_bool.
-ENDCLASS.
-
-CLASS lcl_excel_reader IMPLEMENTATION.
-  METHOD constructor.
-    mv_file = iv_file.
-  ENDMETHOD.
-
-  METHOD get_last_error.
-    rv_msg = mv_error_msg.
-  ENDMETHOD.
-
-  METHOD read_frontend_file.
-    DATA: lt_data_tab   TYPE STANDARD TABLE OF x255,
-          lv_filelength TYPE i.
-
-    rv_ok = abap_false.
-
-    cl_gui_frontend_services=>gui_upload(
-      EXPORTING
-        filename                = CONV string( mv_file )
-        filetype                = 'BIN'
-      IMPORTING
-        filelength              = lv_filelength
-      CHANGING
-        data_tab                 = lt_data_tab
-      EXCEPTIONS
-        file_open_error          = 1
-        file_read_error           = 2
-        no_batch                  = 3
-        gui_refuse_filetransfer   = 4
-        invalid_type              = 5
-        no_authority               = 6
-        unknown_error              = 7
-        bad_data_format            = 8
-        header_not_allowed         = 9
-        separator_not_allowed      = 10
-        header_too_long            = 11
-        unknown_dp_error           = 12
-        access_denied              = 13
-        dp_out_of_memory           = 14
-        disk_full                  = 15
-        dp_timeout                 = 16
-        not_supported_by_gui       = 17
-        error_no_gui                = 18
-        OTHERS                      = 19 ).
-    IF sy-subrc <> 0.
-      mv_error_msg =
-        |No fue posible leer el archivo del frontend (GUI_UPLOAD sy-subrc={ sy-subrc }). | &&
-        |Verifique que el archivo no esté bloqueado por Windows (clic derecho > Propiedades > | &&
-        |Desbloquear) ni sea un archivo de OneDrive/red aún no descargado localmente (ábralo | &&
-        |una vez y guárdelo en una carpeta local, p. ej. C:\temp).|.
-      RETURN.
-    ENDIF.
-
-    IF lv_filelength = 0.
-      mv_error_msg = 'El archivo seleccionado se leyó con 0 bytes de contenido.'.
-      RETURN.
-    ENDIF.
-
-    CALL FUNCTION 'SCMS_BINARY_TO_XSTRING'
-      EXPORTING
-        input_length = lv_filelength
-      IMPORTING
-        buffer       = mv_xdata
-      TABLES
-        binary_tab   = lt_data_tab
-      EXCEPTIONS
-        failed       = 1
-        OTHERS       = 2.
-    IF sy-subrc <> 0.
-      mv_error_msg = |No fue posible convertir el archivo a binario (SCMS_BINARY_TO_XSTRING sy-subrc={ sy-subrc }).|.
-      RETURN.
-    ENDIF.
-
-    rv_ok = abap_true.
-  ENDMETHOD.
-
-  METHOD upload.
-    rv_ok = abap_false.
-
-    IF read_frontend_file( ) = abap_false.
-      RETURN.
-    ENDIF.
-
-    TRY.
-        CREATE OBJECT mo_xl_doc
-          EXPORTING
-            document_name = CONV string( mv_file )
-            xdocument     = mv_xdata.
-        rv_ok = abap_true.
-      CATCH cx_root INTO DATA(lx_error).
-        mv_error_msg = |El motor de lectura de Excel (CL_FDT_XL_SPREADSHEET) rechazó el archivo: | &&
-                       lx_error->get_text( ).
-    ENDTRY.
-  ENDMETHOD.
-
-  METHOD get_sheet.
-    " IF_FDT_DOC_SPREADSHEET~GET_ITAB_FROM_WORKSHEET (público) entrega
-    " RETURNING ITAB TYPE REF TO DATA: una referencia genérica a una
-    " tabla cuya fila es una estructura dinámica (una componente por
-    " columna de la hoja), por lo que hay que recorrerla con RTTI para
-    " extraer cada celda como texto, sin conocer los nombres de columna
-    " en tiempo de compilación. (GET_ITAB_FROM_SHEET, el método propio
-    " de la clase con la misma firma, es protegido/privado.)
-    DATA: lr_itab TYPE REF TO data.
-    FIELD-SYMBOLS: <lt_itab> TYPE ANY TABLE,
-                    <ls_row>  TYPE any.
-
-    CLEAR rt_sheet.
-
-    TRY.
-        lr_itab = mo_xl_doc->if_fdt_doc_spreadsheet~get_itab_from_worksheet(
-                    worksheet_name = iv_sheet_name ).
-      CATCH cx_fdt_excel_core.
-        RETURN.
-    ENDTRY.
-
-    CHECK lr_itab IS BOUND.
-    ASSIGN lr_itab->* TO <lt_itab>.
-    CHECK <lt_itab> IS ASSIGNED.
-
-    DATA(lv_index) = 0.
-    LOOP AT <lt_itab> ASSIGNING <ls_row>.
-      lv_index = lv_index + 1.
-      DATA(ls_sheet_row) = VALUE ty_excel_sheet_row( row_index = lv_index ).
-
-      DATA(lo_type) = cl_abap_typedescr=>describe_by_data( <ls_row> ).
-      IF lo_type->kind = cl_abap_typedescr=>kind_struct.
-        DATA(lo_struct) = CAST cl_abap_structdescr( lo_type ).
-        LOOP AT lo_struct->components INTO DATA(ls_comp).
-          ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_row> TO FIELD-SYMBOL(<lv_cell>).
-          IF sy-subrc = 0.
-            APPEND CONV string( <lv_cell> ) TO ls_sheet_row-cells.
-          ENDIF.
-        ENDLOOP.
-      ELSE.
-        APPEND CONV string( <ls_row> ) TO ls_sheet_row-cells.
-      ENDIF.
-
-      APPEND ls_sheet_row TO rt_sheet.
-    ENDLOOP.
-  ENDMETHOD.
 ENDCLASS.
 
 *&---------------------------------------------------------------*
