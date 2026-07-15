@@ -1003,9 +1003,17 @@ FORM fill_segments
   READ TABLE gt_ventas INTO DATA(ls_venta_ref) WITH KEY material = iv_data_matnr.
 
   " ---------- E1BPE1MARART / E1BPE1MARART1 ----------
+  " NOTA: MARCA, MODELO, ATRIBUTOS FASHION y NIVEL DE TEMPORADA del
+  " Excel (01_ARTICULOS) actualmente NO se envían a ningún segmento.
+  " Se confirmó por RTTI que ni E1BPE1MARART ni E1BPE1MARART1 tienen
+  " esos campos en este sistema; solo existen dentro de
+  " E1BPE1MARARTX (segmento de casillas de verificación), y no está
+  " confirmado que ese segmento acepte ahí valores reales en vez de
+  " 'X'. Pendiente de validar con el equipo funcional de Retail el
+  " segmento real donde deben viajar estos 4 campos antes de
+  " implementarlo, para no enviar un dato incorrecto.
   CLEAR ls_marart.
   ls_marart-material      = iv_data_matnr.
-  ls_marart-material_long = iv_data_matnr.
   ls_marart-base_uom      = is_art-base_uom.
   ls_marart-valid_from    = is_art-valid_from.
   ls_marart-tax_class     = is_art-tax_class.
@@ -1023,12 +1031,6 @@ FORM fill_segments
     ls_marart1-conf_matl_long  = iv_header_matnr.
     ls_marart1-pr_ref_mat_long = ls_marart-pr_ref_mat.
   ENDIF.
-  ls_marart1-brand_id        = is_art-marca.
-  ls_marart1-free_char_value = is_art-modelo.
-  ls_marart1-fashion_attr_1  = is_art-fashion_attr_1.
-  ls_marart1-fashion_attr_2  = is_art-fashion_attr_2.
-  ls_marart1-fashion_attr_3  = is_art-fashion_attr_3.
-  ls_marart1-season_level    = is_art-season_level.
   PERFORM append_segment USING 'E1BPE1MARART1' ls_marart1 CHANGING ct_edidd.
 
   " ---------- E1BPE1MAKTRT ----------
@@ -1065,7 +1067,6 @@ FORM fill_segments
   LOOP AT gt_centros INTO DATA(ls_centro) WHERE material = iv_data_matnr.
     CLEAR ls_marcrt.
     ls_marcrt-material      = iv_data_matnr.
-    ls_marcrt-material_long = iv_data_matnr.
     ls_marcrt-plant         = ls_centro-plant.
     ls_marcrt-pur_group     = ls_centro-pur_group.
     ls_marcrt-mrp_type      = ls_centro-mrp_type.

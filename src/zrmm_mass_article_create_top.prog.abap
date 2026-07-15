@@ -228,7 +228,6 @@ TYPES:
 
   BEGIN OF ty_e1bpe1marart,
     material      TYPE c LENGTH 18,
-    material_long TYPE c LENGTH 40,
     base_uom      TYPE c LENGTH 3,
     valid_from    TYPE c LENGTH 8,
     tax_class     TYPE c LENGTH 1,
@@ -237,16 +236,21 @@ TYPES:
     item_cat      TYPE c LENGTH 4,
   END OF ty_e1bpe1marart,
 
+  " NOTA: confirmado por RTTI contra el sistema real (ZTEST_SEGMENT_FIELDS)
+  " que E1BPE1MARART1 NO tiene FREE_CHAR_VALUE/BRAND_ID/FASHION_ATTRIBUTE_x/
+  " SEASON_LEVEL en este sistema; esos campos solo existen dentro de
+  " E1BPE1MARARTX. Como MARARTX se genera automáticamente como segmento
+  " de casillas de verificación (ver FILL_X_SEGMENT/APPEND_SEGMENT) y no
+  " está confirmado que ese segmento acepte valores reales (en vez de
+  " 'X') para esos campos específicos, de momento NO se envían Marca,
+  " Modelo, Atributos fashion ni Nivel de temporada a ningún segmento,
+  " para no arriesgarse a mandar un dato incorrecto. Pendiente de
+  " confirmar con el equipo funcional de Retail en qué segmento real
+  " deben viajar estos 4 campos.
   BEGIN OF ty_e1bpe1marart1,
     material_long    TYPE c LENGTH 40,
     conf_matl_long   TYPE c LENGTH 40,
     pr_ref_mat_long  TYPE c LENGTH 40,
-    free_char_value  TYPE c LENGTH 20,
-    brand_id         TYPE c LENGTH 10,
-    fashion_attr_1   TYPE c LENGTH 10,
-    fashion_attr_2   TYPE c LENGTH 10,
-    fashion_attr_3   TYPE c LENGTH 10,
-    season_level     TYPE c LENGTH 4,
   END OF ty_e1bpe1marart1,
 
   BEGIN OF ty_e1bpe1maktrt,
@@ -258,7 +262,6 @@ TYPES:
 
   BEGIN OF ty_e1bpe1marcrt,
     material      TYPE c LENGTH 18,
-    material_long TYPE c LENGTH 40,
     plant         TYPE c LENGTH 4,
     pur_group     TYPE c LENGTH 3,
     mrp_type      TYPE c LENGTH 2,
