@@ -1708,7 +1708,8 @@ FORM map_to_real_segment
            is_source TYPE any
   CHANGING cv_sdata  TYPE edidd-sdata.
 
-  DATA: lr_real TYPE REF TO data.
+  DATA: lr_real TYPE REF TO data,
+        lv_msg  TYPE string.
   FIELD-SYMBOLS: <ls_real> TYPE any.
 
   CLEAR cv_sdata.
@@ -1719,7 +1720,8 @@ FORM map_to_real_segment
       " La estructura DDIC del segmento no se encontró con ese nombre
       " exacto en el sistema; se usa el layout local como respaldo,
       " con el riesgo de desalineación ya conocido.
-      PERFORM register_unmapped USING |{ iv_segnam }: estructura no encontrada en el sistema|.
+      lv_msg = |{ iv_segnam }: estructura no encontrada en el sistema|.
+      PERFORM register_unmapped USING lv_msg.
       cv_sdata = is_source.
       RETURN.
   ENDTRY.
@@ -1734,7 +1736,8 @@ FORM map_to_real_segment
     CHECK sy-subrc = 0.
     ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_real> TO FIELD-SYMBOL(<lv_dst>).
     IF sy-subrc <> 0.
-      PERFORM register_unmapped USING |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
+      lv_msg = |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
+      PERFORM register_unmapped USING lv_msg.
       CONTINUE.
     ENDIF.
     <lv_dst> = <lv_src>.
