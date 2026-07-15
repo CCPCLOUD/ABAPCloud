@@ -29,6 +29,9 @@ FORM main.
 * Actualiza/crea PA0105 (SUBTY 0010) desde ZSOX_NETUSER
   PERFORM update_pa0105_subty_0010.
 
+* Actualiza USR21-KOSTL desde PA0001 (registro con AEDTM mas reciente)
+  PERFORM update_usr21_kostl.
+
 * Muestra el resumen de resultados
   PERFORM display_results.
 
@@ -207,6 +210,78 @@ FORM update_pa0105_subty_0010.
 ENDFORM.
 
 *&---------------------------------------------------------------------*
+*&      Form  UPDATE_USR21_KOSTL
+*&---------------------------------------------------------------------*
+*&  USR21.KOSTL <- PA0001.KOSTL (registro con PA0001.AEDTM mas reciente
+*&  para el PERNR), USR21.PERSNUMBER = PA0001.PERNR
+*&---------------------------------------------------------------------*
+FORM update_usr21_kostl.
+
+  DATA: lt_usr21_cpy TYPE STANDARD TABLE OF ty_usr21,
+        lv_kostl_new TYPE pa0001-kostl.
+
+  REFRESH: gt_usr21, gt_pa0001_kostl.
+
+  SELECT bname persnumber kostl
+    INTO TABLE gt_usr21
+    FROM usr21.
+
+  CHECK gt_usr21 IS NOT INITIAL.
+
+* Convierte USR21-PERSNUMBER a formato PA0001-PERNR
+  LOOP AT gt_usr21 INTO gs_usr21.
+    gs_usr21-pernr = gs_usr21-persnumber.
+    MODIFY gt_usr21 FROM gs_usr21 TRANSPORTING pernr.
+  ENDLOOP.
+
+* Copia sin duplicados para la busqueda FOR ALL ENTRIES
+  lt_usr21_cpy[] = gt_usr21.
+  SORT lt_usr21_cpy BY pernr.
+  DELETE ADJACENT DUPLICATES FROM lt_usr21_cpy COMPARING pernr.
+
+  SELECT pernr kostl aedtm
+    INTO TABLE gt_pa0001_kostl
+    FROM pa0001
+    FOR ALL ENTRIES IN lt_usr21_cpy
+    WHERE pernr = lt_usr21_cpy-pernr.
+
+  FREE lt_usr21_cpy.
+
+  CHECK gt_pa0001_kostl IS NOT INITIAL.
+
+* Conserva, por PERNR, el registro con el AEDTM mas reciente
+  SORT gt_pa0001_kostl BY pernr ASCENDING aedtm DESCENDING.
+  DELETE ADJACENT DUPLICATES FROM gt_pa0001_kostl COMPARING pernr.
+
+  LOOP AT gt_usr21 INTO gs_usr21.
+
+    CHECK gs_usr21-pernr IS NOT INITIAL.
+
+    READ TABLE gt_pa0001_kostl INTO gs_pa0001_kostl
+      WITH KEY pernr = gs_usr21-pernr BINARY SEARCH.
+    CHECK sy-subrc = 0.
+
+    CLEAR lv_kostl_new.
+    lv_kostl_new = gs_pa0001_kostl-kostl.
+
+    CHECK lv_kostl_new <> gs_usr21-kostl.
+
+    UPDATE usr21 SET kostl = lv_kostl_new
+      WHERE bname = gs_usr21-bname.
+
+    IF sy-subrc = 0.
+      COMMIT WORK.
+      ADD 1 TO gv_updated_3.
+    ELSE.
+      ROLLBACK WORK.
+      ADD 1 TO gv_errors.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
 *&      Form  DISPLAY_RESULTS
 *&---------------------------------------------------------------------*
 FORM display_results.
@@ -214,6 +289,7 @@ FORM display_results.
   WRITE: / 'USR02-ACCNT actualizados      :', gv_updated_1.
   WRITE: / 'PA0105 (0010) actualizados    :', gv_updated_2.
   WRITE: / 'PA0105 (0010) creados         :', gv_created_2.
+  WRITE: / 'USR21-KOSTL actualizados      :', gv_updated_3.
   WRITE: / 'Errores                       :', gv_errors.
 
 ENDFORM.
