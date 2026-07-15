@@ -451,7 +451,7 @@ FORM parse_unidades_ean USING io_reader TYPE REF TO lcl_excel_reader.
     DATA(ls_u) = VALUE ty_unidad_ean( material = lv_material ).
     READ TABLE lt_idx INDEX 2 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-alt_unit  = lv_v.
     READ TABLE lt_idx INDEX 3 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-numerator = lv_v.
-    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-denomintr = lv_v.
+    READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-denominatr = lv_v.
     READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_upc   = lv_v.
     READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_cat   = lv_v.
     APPEND ls_u TO gt_unidades_ean.
@@ -1105,7 +1105,7 @@ FORM fill_segments
     ls_marmrt-material_long = iv_data_matnr.
     ls_marmrt-alt_unit       = ls_uni-alt_unit.
     ls_marmrt-numerator      = ls_uni-numerator.
-    ls_marmrt-denomintr      = ls_uni-denomintr.
+    ls_marmrt-denominatr      = ls_uni-denominatr.
     ls_marmrt-ean_upc        = ls_uni-ean_upc.
     ls_marmrt-ean_cat        = ls_uni-ean_cat.
     PERFORM append_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
@@ -1287,8 +1287,15 @@ FORM map_to_real_segment
     CHECK sy-subrc = 0.
     ASSIGN COMPONENT ls_comp-name OF STRUCTURE <ls_real> TO FIELD-SYMBOL(<lv_dst>).
     IF sy-subrc <> 0.
-      lv_msg = |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
-      PERFORM register_unmapped USING lv_msg.
+      " Los campos "_LONG" solo duplican el valor de otro campo ya
+      " mapeado (MATERIAL, VARIANT, CONF_MATL, etc.); confirmado por
+      " RTTI que su ausencia puntual en algunos segmentos (sobre todo
+      " variantes X) es normal y no implica pérdida de datos de
+      " negocio, así que no se reporta como advertencia.
+      IF NOT ls_comp-name CP '*_LONG'.
+        lv_msg = |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
+        PERFORM register_unmapped USING lv_msg.
+      ENDIF.
       CONTINUE.
     ENDIF.
     <lv_dst> = <lv_src>.
