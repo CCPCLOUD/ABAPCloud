@@ -392,7 +392,7 @@ TYPES:
 *&---------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
 PARAMETERS:
-  p_file TYPE rlgrap-filename OBLIGATORY.                  " Archivo Excel local (.xlsx)
+  p_file TYPE c LENGTH 255 OBLIGATORY.                  " Archivo Excel local (.xlsx)
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
@@ -410,7 +410,7 @@ START-OF-SELECTION.
 *&---------------------------------------------------------------*
 *& FORM f4_file_open
 *&---------------------------------------------------------------*
-FORM f4_file_open CHANGING cv_file TYPE rlgrap-filename.
+FORM f4_file_open CHANGING cv_file TYPE c LENGTH 255.
   DATA: lt_files TYPE filetable,
         lv_rc    TYPE i,
         lv_action TYPE i.
@@ -466,7 +466,7 @@ CLASS lcl_excel_reader DEFINITION.
   PUBLIC SECTION.
     METHODS:
       constructor
-        IMPORTING iv_file TYPE rlgrap-filename,
+        IMPORTING iv_file TYPE c LENGTH 255,
 
       upload
         RETURNING VALUE(rv_ok) TYPE abap_bool,
@@ -479,7 +479,7 @@ CLASS lcl_excel_reader DEFINITION.
         RETURNING VALUE(rt_sheet)   TYPE ty_excel_sheet.
 
   PRIVATE SECTION.
-    DATA: mv_file      TYPE rlgrap-filename,
+    DATA: mv_file      TYPE c LENGTH 255,
           mo_xl_doc    TYPE REF TO cl_fdt_xl_spreadsheet,
           mv_xdata     TYPE xstring,
           mv_error_msg TYPE string.
