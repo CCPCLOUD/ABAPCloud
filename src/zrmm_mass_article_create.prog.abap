@@ -18,12 +18,21 @@
 *& NOTA IMPORTANTE PARA EL DESARROLLADOR:
 *& Los nombres de segmento y campos usados abajo (E1BPE1MATHEAD,
 *& E1BPE1MARART, etc.) corresponden a los segmentos observados en
-*& IDocs ARTMAS09 exitosos de referencia. Antes de transportar,
-*& confirmar en el sistema destino con WE60/WE30/SE11 que el tipo
-*& básico activo expone exactamente estos nombres de segmento y
-*& campos; si la versión de Retail usa nombres distintos, ajustar
-*& únicamente las TYPES de segmento (sección de tipos), el resto
-*& de la lógica funcional no cambia.
+*& IDocs ARTMAS09 exitosos de referencia. Las TYPES locales
+*& (ty_e1bpe1...) solo ordenan la lógica de negocio: el armado final
+*& de cada segmento (FORM MAP_TO_REAL_SEGMENT) copia los valores por
+*& NOMBRE de campo contra la estructura DDIC real del sistema
+*& destino, por lo que diferencias de longitud entre lo asumido aquí
+*& y el sistema real ya no desalinean los datos.
+*& Lo que SÍ puede variar por sistema/versión de Retail es el NOMBRE
+*& de segmento o de campo en sí (no solo su longitud). Para
+*& confirmarlo sin revisar manualmente WE30/SE11: ejecute la
+*& transacción en modo simulación (P_SIM = X) contra un archivo real
+*& - el log ALV mostrará una fila de advertencia listando cualquier
+*& segmento/campo que no haya encontrado su equivalente por nombre en
+*& el sistema (FORM REPORT_UNMAPPED_FIELDS). Si aparece alguno,
+*& ajústelo solo en la sección de TYPES de segmento; el resto de la
+*& lógica funcional no cambia.
 *&---------------------------------------------------------------*
 REPORT zrmm_mass_article_create.
 
