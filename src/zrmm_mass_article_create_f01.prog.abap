@@ -1199,8 +1199,10 @@ FORM append_segment
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
 
-  DATA: ls_edidd  TYPE edidd,
-        lr_data_x TYPE REF TO data.
+  DATA: ls_edidd    TYPE edidd,
+        lr_data_x   TYPE REF TO data,
+        lr_x_exists TYPE REF TO data,
+        lv_segnamx  TYPE edidd-segnam.
   FIELD-SYMBOLS: <ls_data_x> TYPE any.
 
   CLEAR ls_edidd.
@@ -1210,6 +1212,18 @@ FORM append_segment
 
   " Segmento de casilla de verificación (X) - marca los campos poblados
   " para indicar a SAP qué atributos crear (detalle técnico, 2.4.5).
+  " NO todos los segmentos de datos tienen un segmento X hijo en el
+  " tipo básico (confirmado en WE30: p.ej. E1BPE1AUSPRTX sí existe,
+  " pero E1BPE1MATHEADX o E1BPE1VARKEYX no). Se comprueba primero si
+  " la estructura X existe realmente antes de generarlo; si no existe,
+  " se omite en silencio (es una condición normal, no un error).
+  lv_segnamx = |{ iv_segnam }X|.
+  TRY.
+      CREATE DATA lr_x_exists TYPE (lv_segnamx).
+    CATCH cx_root.
+      RETURN.
+  ENDTRY.
+
   " CREATE DATA ... LIKE sí admite un origen de tipo genérico (a
   " diferencia de DATA ... LIKE, que requiere un tipo estático).
   CREATE DATA lr_data_x LIKE is_data.
@@ -1218,8 +1232,8 @@ FORM append_segment
   PERFORM fill_x_segment CHANGING <ls_data_x>.
 
   CLEAR ls_edidd.
-  ls_edidd-segnam = |{ iv_segnam }X|.
-  PERFORM map_to_real_segment USING ls_edidd-segnam <ls_data_x> CHANGING ls_edidd-sdata.
+  ls_edidd-segnam = lv_segnamx.
+  PERFORM map_to_real_segment USING lv_segnamx <ls_data_x> CHANGING ls_edidd-sdata.
   APPEND ls_edidd TO ct_edidd.
 ENDFORM.
 
