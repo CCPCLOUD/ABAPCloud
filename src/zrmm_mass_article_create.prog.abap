@@ -40,6 +40,9 @@ CONSTANTS:
   gc_cat_generico  TYPE c LENGTH 2  VALUE '01',
   gc_cat_variante  TYPE c LENGTH 2  VALUE '02'.
 
+CONSTANTS gc_idoc_error_status TYPE string
+  VALUE ',02,04,05,06,10,16,18,20,22,23,25,26,29,31,33,35,37,39,43,45,47,49,51,56,58,60,61,63,65,67,69,70,74,75,'.
+
 CONSTANTS:
   BEGIN OF gc_status,
     ok      TYPE char1 VALUE 'S',   " Verde  - éxito
@@ -1262,10 +1265,17 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
 
   READ TABLE lt_edidc_result INTO DATA(ls_result) INDEX 1.
   IF sy-subrc = 0.
+    " GC_IDOC_ERROR_STATUS: estatus de IDoc estándar SAP que representan
+    " un fallo definitivo (ver WE47/WEDI). '53' es el único estatus que
+    " confirma documento de aplicación contabilizado con éxito; cualquier
+    " otro estatus no listado como error (p.ej. 03, 12, 30, 64) indica
+    " que el IDoc quedó en tránsito/pendiente y su resultado final debe
+    " confirmarse en WE02/BD87, por lo que se marca como advertencia y
+    " no como éxito.
     DATA(lv_status_log) = COND char1(
-      WHEN ls_result-status = '51' OR ls_result-status = '56' OR ls_result-status = '02' THEN gc_status-error
-      WHEN ls_result-status = '64' OR ls_result-status = '30' THEN gc_status-warning
-      ELSE gc_status-ok ).
+      WHEN gc_idoc_error_status CS |,{ ls_result-status },| THEN gc_status-error
+      WHEN ls_result-status = '53' THEN gc_status-ok
+      ELSE gc_status-warning ).
 
     APPEND VALUE ty_log(
       status        = lv_status_log
@@ -1277,7 +1287,12 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
       message_type  = COND symsgty( WHEN lv_status_log = gc_status-error THEN 'E'
                                      WHEN lv_status_log = gc_status-warning THEN 'W'
                                      ELSE 'S' )
-      message       = |IDoc { ls_result-docnum } generado. Estatus { ls_result-status }.|
+      message       = COND #(
+                         WHEN lv_status_log = gc_status-warning THEN
+                           |IDoc { ls_result-docnum } generado, estatus { ls_result-status } | &&
+                           |(en tránsito/pendiente). Confirme el resultado final en WE02/BD87.|
+                         ELSE
+                           |IDoc { ls_result-docnum } generado. Estatus { ls_result-status }.| )
       creation_date = sy-datum
       uname         = sy-uname
       idoc_status   = ls_result-status ) TO gt_log.
