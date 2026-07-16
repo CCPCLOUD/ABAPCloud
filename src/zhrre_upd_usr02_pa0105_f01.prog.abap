@@ -47,7 +47,7 @@ FORM update_usr02_accnt.
   DATA: lt_return     TYPE STANDARD TABLE OF bapiret2,
         ls_return     TYPE bapiret2,
         ls_logondata  TYPE bapilogond,
-        ls_logondatax TYPE bapilogondx,
+        ls_logondatax TYPE bapilogonx,
         lv_accnt_new  TYPE usr02-accnt.
 
   REFRESH gt_usr02_pa0105.
