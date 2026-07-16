@@ -106,7 +106,7 @@ FORM update_pa0105_subty_0010.
 
   DATA: lt_return TYPE STANDARD TABLE OF bapireturn1,
         ls_return TYPE bapireturn1,
-        ls_key    TYPE prelp-key,
+        ls_key    TYPE prelp-pskey,
         ls_record TYPE p0105,
         lv_pernr  TYPE pa0105-pernr.
 
