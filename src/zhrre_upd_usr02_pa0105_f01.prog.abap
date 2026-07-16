@@ -3,17 +3,17 @@
 *----------------------------------------------------------------------
 * Program name          : ZHRRE_UPD_USR02_PA0105
 * Include name           : ZHRRE_UPD_USR02_PA0105_F01
-* Functionality         : Rutinas FORM del programa
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant       : <Nombre Consultor ABAP>
+* Functionality         : Program FORM routines
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant       : <ABAP Consultant Name>
 * Creation Date         : 2026.07.14
 * Ticket                 : ######
 *----------------------------------------------------------------------
 *                       Modification Log
 *----------------------------------------------------------------------
-* Description            : <Objetivo del cambio>
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant        : <Nombre Consultor ABAP>
+* Description            : <Objective of the change>
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant        : <ABAP Consultant Name>
 * Modification date      : YYYY.MM.DD
 * Ticket                 : ######
 *----------------------------------------------------------------------
@@ -23,16 +23,16 @@
 *&---------------------------------------------------------------------*
 FORM main.
 
-* Actualiza USR02-ACCNT desde PA0105 (SUBTY 0001)
+* Update USR02-ACCNT from PA0105 (SUBTY 0001)
   PERFORM update_usr02_accnt.
 
-* Actualiza/crea PA0105 (SUBTY 0010) desde ZSOX_NETUSER
+* Update/create PA0105 (SUBTY 0010) from ZSOX_NETUSER
   PERFORM update_pa0105_subty_0010.
 
-* Actualiza USR21-KOSTL desde PA0001 (registro con AEDTM mas reciente)
+* Update USR21-KOSTL from PA0001 (record with the latest AEDTM)
   PERFORM update_usr21_kostl.
 
-* Muestra el resumen de resultados
+* Show the results summary
   PERFORM display_results.
 
 ENDFORM.
@@ -99,8 +99,9 @@ ENDFORM.
 *&      Form  UPDATE_PA0105_SUBTY_0010
 *&---------------------------------------------------------------------*
 *&  PA0105 (SUBTY = '0010', PERNR = ZSOX_NETUSER.WIKEY):
-*&  - USRID_LONG <- ZSOX_NETUSER.ADID (si el registro ya existe y difiere)
-*&  - crea el registro si no existe ninguno para ese PERNR/SUBTY
+*&  - USRID_LONG <- ZSOX_NETUSER.ADID (if the record already exists and
+*&    differs)
+*&  - creates the record if none exists for that PERNR/SUBTY
 *&---------------------------------------------------------------------*
 FORM update_pa0105_subty_0010.
 
@@ -212,8 +213,8 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *&      Form  UPDATE_USR21_KOSTL
 *&---------------------------------------------------------------------*
-*&  USR21.KOSTL <- PA0001.KOSTL (registro con PA0001.AEDTM mas reciente
-*&  para el PERNR), USR21.PERSNUMBER = PA0001.PERNR
+*&  USR21.KOSTL <- PA0001.KOSTL (record with the latest PA0001.AEDTM
+*&  for the PERNR), USR21.PERSNUMBER = PA0001.PERNR
 *&---------------------------------------------------------------------*
 FORM update_usr21_kostl.
 
@@ -228,13 +229,13 @@ FORM update_usr21_kostl.
 
   CHECK gt_usr21 IS NOT INITIAL.
 
-* Convierte USR21-PERSNUMBER a formato PA0001-PERNR
+* Convert USR21-PERSNUMBER to PA0001-PERNR format
   LOOP AT gt_usr21 INTO gs_usr21.
     gs_usr21-pernr = gs_usr21-persnumber.
     MODIFY gt_usr21 FROM gs_usr21 TRANSPORTING pernr.
   ENDLOOP.
 
-* Copia sin duplicados para la busqueda FOR ALL ENTRIES
+* Copy without duplicates for the FOR ALL ENTRIES lookup
   lt_usr21_cpy[] = gt_usr21.
   SORT lt_usr21_cpy BY pernr.
   DELETE ADJACENT DUPLICATES FROM lt_usr21_cpy COMPARING pernr.
@@ -249,7 +250,7 @@ FORM update_usr21_kostl.
 
   CHECK gt_pa0001_kostl IS NOT INITIAL.
 
-* Conserva, por PERNR, el registro con el AEDTM mas reciente
+* Keep, per PERNR, the record with the latest AEDTM
   SORT gt_pa0001_kostl BY pernr ASCENDING aedtm DESCENDING.
   DELETE ADJACENT DUPLICATES FROM gt_pa0001_kostl COMPARING pernr.
 

@@ -3,17 +3,17 @@
 *----------------------------------------------------------------------
 * Program name          : ZHRRE_UPD_USR02_PA0105
 * Include name           : ZHRRE_UPD_USR02_PA0105_TOP
-* Functionality         : Declaraciones globales (TYPES / DATA)
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant       : <Nombre Consultor ABAP>
+* Functionality         : Global declarations (TYPES / DATA)
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant       : <ABAP Consultant Name>
 * Creation Date         : 2026.07.14
 * Ticket                 : ######
 *----------------------------------------------------------------------
 *                       Modification Log
 *----------------------------------------------------------------------
-* Description            : <Objetivo del cambio>
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant        : <Nombre Consultor ABAP>
+* Description            : <Objective of the change>
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant        : <ABAP Consultant Name>
 * Modification date      : YYYY.MM.DD
 * Ticket                 : ######
 *----------------------------------------------------------------------

@@ -2,22 +2,22 @@
 *                 Workbench component Information
 *----------------------------------------------------------------------
 * Program name          : ZHRRE_UPD_USR02_PA0105
-* Functionality         : Actualiza USR02-ACCNT desde PA0105 (SUBTY 0001);
-*                          sincroniza PA0105 (SUBTY 0010) con ZSOX_NETUSER
-*                          (creando el registro si no existe); y actualiza
-*                          USR21-KOSTL con el KOSTL del registro PA0001 con
-*                          el AEDTM mas reciente por PERNR
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant       : <Nombre Consultor ABAP>
+* Functionality         : Updates USR02-ACCNT from PA0105 (SUBTY 0001);
+*                          syncs PA0105 (SUBTY 0010) with ZSOX_NETUSER
+*                          (creating the record if it does not exist); and
+*                          updates USR21-KOSTL with the KOSTL of the PA0001
+*                          record with the latest AEDTM per PERNR
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant       : <ABAP Consultant Name>
 * Creation Date         : 2026.07.14
 * Ticket                 : ######
 *----------------------------------------------------------------------
 *                       Modification Log
 *----------------------------------------------------------------------
-* Description            : Se agrega tercera logica: actualizacion de
-*                           USR21-KOSTL desde PA0001
-* Functional Consultant: : <Nombre Consultor Funcional>
-* Abap Consultant        : <Nombre Consultor ABAP>
+* Description            : Added third logic: update USR21-KOSTL from
+*                           PA0001
+* Functional Consultant: : <Functional Consultant Name>
+* Abap Consultant        : <ABAP Consultant Name>
 * Modification date      : 2026.07.15
 * Ticket                 : ######
 *----------------------------------------------------------------------
