@@ -330,7 +330,8 @@ FORM parse_articulos USING io_reader TYPE REF TO lcl_excel_reader.
     ( `Perfil características` ) ( `Clase configuración` )
     ( `Fecha inicio validez AAAAMMDD` ) ( `Clase fiscal material` )
     ( `Modelo` ) ( `Marca` ) ( `Atributo fashion 1` ) ( `Atributo fashion 2` )
-    ( `Atributo fashion 3` ) ( `Nivel temporada` ) ).
+    ( `Atributo fashion 3` ) ( `Nivel temporada` )
+    ( `Grupo de transporte` ) ( `Peso neto` ) ).
   DATA(lt_idx) = VALUE ty_int4_table( ).
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
@@ -358,6 +359,8 @@ FORM parse_articulos USING io_reader TYPE REF TO lcl_excel_reader.
     READ TABLE lt_idx INDEX 15 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-fashion_attr_2 = lv_v.
     READ TABLE lt_idx INDEX 16 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-fashion_attr_3 = lv_v.
     READ TABLE lt_idx INDEX 17 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-season_level   = lv_v.
+    READ TABLE lt_idx INDEX 18 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-trans_grp      = lv_v.
+    READ TABLE lt_idx INDEX 19 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_art-net_weight     = lv_v.
 
     APPEND ls_art TO gt_articulos.
   ENDLOOP.
@@ -378,7 +381,8 @@ FORM parse_centros USING io_reader TYPE REF TO lcl_excel_reader.
     ( `Material` ) ( `Centro` ) ( `Grupo compras` ) ( `Tipo MRP` )
     ( `Plazo entrega planificado` ) ( `Tipo aprovisionamiento` )
     ( `Grupo carga` ) ( `Verificación disponibilidad` ) ( `Centro beneficio` )
-    ( `País origen` ) ( `Perfil distribución` ) ( `Stock negativo X/vacío` ) ).
+    ( `País origen` ) ( `Perfil distribución` ) ( `Stock negativo X/vacío` )
+    ( `Fuente aprovisionamiento` ) ( `Valor de redondeo` ) ).
   DATA(lt_idx) = VALUE ty_int4_table( ).
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
@@ -398,6 +402,8 @@ FORM parse_centros USING io_reader TYPE REF TO lcl_excel_reader.
     READ TABLE lt_idx INDEX 10 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-countryori = lv_v.
     READ TABLE lt_idx INDEX 11 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-distr_prof = lv_v.
     READ TABLE lt_idx INDEX 12 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-neg_stocks = lv_v.
+    READ TABLE lt_idx INDEX 13 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-sup_source = lv_v.
+    READ TABLE lt_idx INDEX 14 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_c-round_val  = lv_v.
 
     APPEND ls_c TO gt_centros.
   ENDLOOP.
@@ -441,7 +447,9 @@ FORM parse_unidades_ean USING io_reader TYPE REF TO lcl_excel_reader.
 
   DATA(lt_headers) = VALUE string_table(
     ( `Material` ) ( `Unidad medida` ) ( `Numerador` ) ( `Denominador` )
-    ( `EAN/UPC` ) ( `Categoría EAN` ) ).
+    ( `EAN/UPC` ) ( `Categoría EAN` )
+    ( `Longitud` ) ( `Ancho` ) ( `Alto` ) ( `Unidad dimensión` )
+    ( `Volumen` ) ( `Unidad volumen` ) ( `Peso bruto` ) ( `Unidad de peso` ) ).
   DATA(lt_idx) = VALUE ty_int4_table( ).
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
@@ -454,6 +462,14 @@ FORM parse_unidades_ean USING io_reader TYPE REF TO lcl_excel_reader.
     READ TABLE lt_idx INDEX 4 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-denominatr = lv_v.
     READ TABLE lt_idx INDEX 5 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_upc   = lv_v.
     READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-ean_cat   = lv_v.
+    READ TABLE lt_idx INDEX 7  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-length     = lv_v.
+    READ TABLE lt_idx INDEX 8  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-width      = lv_v.
+    READ TABLE lt_idx INDEX 9  INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-height     = lv_v.
+    READ TABLE lt_idx INDEX 10 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-unit_dim   = lv_v.
+    READ TABLE lt_idx INDEX 11 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-volume     = lv_v.
+    READ TABLE lt_idx INDEX 12 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-volumeunit = lv_v.
+    READ TABLE lt_idx INDEX 13 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-gross_wt   = lv_v.
+    READ TABLE lt_idx INDEX 14 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_u-unit_of_wt = lv_v.
     APPEND ls_u TO gt_unidades_ean.
   ENDLOOP.
 ENDFORM.
@@ -533,7 +549,7 @@ FORM parse_ventas USING io_reader TYPE REF TO lcl_excel_reader.
   DATA(lt_headers) = VALUE string_table(
     ( `Material` ) ( `Organización ventas` ) ( `Canal distribución` ) ( `Categoría ítem` )
     ( `Grupo imputación` ) ( `Fecha inicio AAAAMMDD` ) ( `Fecha fin AAAAMMDD` )
-    ( `Material referencia precio` ) ).
+    ( `Material referencia precio` ) ( `Unidad de entrega` ) ).
   DATA(lt_idx) = VALUE ty_int4_table( ).
   PERFORM build_header_index USING lt_sheet lt_headers CHANGING lt_idx.
 
@@ -548,6 +564,7 @@ FORM parse_ventas USING io_reader TYPE REF TO lcl_excel_reader.
     READ TABLE lt_idx INDEX 6 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-fecha_inicio = lv_v.
     READ TABLE lt_idx INDEX 7 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-fecha_fin    = lv_v.
     READ TABLE lt_idx INDEX 8 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-pr_ref_mat   = lv_v.
+    READ TABLE lt_idx INDEX 9 INTO lv_i. PERFORM cell_by_index USING ls_row lv_i CHANGING lv_v. ls_ve-dely_unit    = lv_v.
     APPEND ls_ve TO gt_ventas.
   ENDLOOP.
 ENDFORM.
@@ -934,14 +951,26 @@ FORM fill_segments
         ls_maw1rt    TYPE ty_e1bpe1maw1rt,
         ls_ausprt    TYPE ty_e1bpe1ausprt,
         ls_marcrt    TYPE ty_e1bpe1marcrt,
+        ls_marcrt1   TYPE ty_e1bpe1marcrt1,
         ls_mardrt    TYPE ty_e1bpe1mardrt,
+        ls_mpoprt    TYPE ty_e1bpe1mpoprt,
+        ls_mpgdrt    TYPE ty_e1bpe1mpgdrt,
         ls_marmrt    TYPE ty_e1bpe1marmrt,
+        ls_mamtrt    TYPE ty_e1bpe1mamtrt,
         ls_meanrt    TYPE ty_e1bpe1meanrt,
         ls_mlanrt    TYPE ty_e1bpe1mlanrt,
         ls_mbewrt    TYPE ty_e1bpe1mbewrt,
         ls_mvkert    TYPE ty_e1bpe1mvkert,
         ls_wlk2rt    TYPE ty_e1bpe1wlk2rt,
         ls_fshseason TYPE ty_e1bpfshseasons.
+
+  " NOTA: el orden de generación de segmentos sigue estrictamente la
+  " "Tabla de mapeo para ABAP V2" (EF V3, 2.4.4): MATHEAD, VARKEY,
+  " AUSPRT, MARART/MARART1, MAW1RT, MAKTRT, MARCRT/MARCRT1, MARDRT,
+  " MPOPRT, MPGDRT, MARMRT/MAMTRT/MEANRT, MLANRT, MBEWRT, MVKERT/
+  " WLK2RT, FSHSEASONS. La EF indica explícitamente que el orden
+  " importa para que la BAPI de creación de material funcione
+  " correctamente.
 
   " ---------- E1BPE1MATHEAD ----------
   CLEAR ls_mathead.
@@ -1003,20 +1032,13 @@ FORM fill_segments
   READ TABLE gt_ventas INTO DATA(ls_venta_ref) WITH KEY material = iv_data_matnr.
 
   " ---------- E1BPE1MARART / E1BPE1MARART1 ----------
-  " NOTA: MARCA, MODELO, ATRIBUTOS FASHION y NIVEL DE TEMPORADA del
-  " Excel (01_ARTICULOS) actualmente NO se envían a ningún segmento.
-  " Se confirmó por RTTI que ni E1BPE1MARART ni E1BPE1MARART1 tienen
-  " esos campos en este sistema; solo existen dentro de
-  " E1BPE1MARARTX (segmento de casillas de verificación), y no está
-  " confirmado que ese segmento acepte ahí valores reales en vez de
-  " 'X'. Pendiente de validar con el equipo funcional de Retail el
-  " segmento real donde deben viajar estos 4 campos antes de
-  " implementarlo, para no enviar un dato incorrecto.
   CLEAR ls_marart.
   ls_marart-material      = iv_data_matnr.
   ls_marart-base_uom      = is_art-base_uom.
   ls_marart-valid_from    = is_art-valid_from.
   ls_marart-tax_class     = is_art-tax_class.
+  ls_marart-net_weight    = is_art-net_weight.
+  ls_marart-trans_grp     = is_art-trans_grp.
   IF is_art-tipo_carga = gc_cat_variante.
     ls_marart-conf_matl  = iv_header_matnr.
     ls_marart-pr_ref_mat = COND #( WHEN ls_venta_ref-pr_ref_mat IS NOT INITIAL
@@ -1031,17 +1053,16 @@ FORM fill_segments
     ls_marart1-conf_matl_long  = iv_header_matnr.
     ls_marart1-pr_ref_mat_long = ls_marart-pr_ref_mat.
   ENDIF.
+  ls_marart1-brand_id        = is_art-marca.
+  ls_marart1-free_char_value = is_art-modelo.
+  ls_marart1-fashion_attr_1  = is_art-fashion_attr_1.
+  ls_marart1-fashion_attr_2  = is_art-fashion_attr_2.
+  ls_marart1-fashion_attr_3  = is_art-fashion_attr_3.
+  ls_marart1-season_level    = is_art-season_level.
   PERFORM append_segment USING 'E1BPE1MARART1' ls_marart1 CHANGING ct_edidd.
 
-  " ---------- E1BPE1MAKTRT ----------
-  CLEAR ls_maktrt.
-  ls_maktrt-material      = iv_data_matnr.
-  ls_maktrt-material_long = iv_data_matnr.
-  ls_maktrt-langu         = gc_default_langu.
-  ls_maktrt-matl_desc     = is_art-descripcion.
-  PERFORM append_segment USING 'E1BPE1MAKTRT' ls_maktrt CHANGING ct_edidd.
-
   " ---------- E1BPE1MAW1RT (derivado, primer centro/valoración/venta) ----------
+  " NOTA: la EF V3 exige generar E1BPE1MAW1RT ANTES de E1BPE1MAKTRT.
   READ TABLE gt_centros INTO DATA(ls_centro_ref) WITH KEY material = iv_data_matnr.
   READ TABLE gt_valoraciones INTO DATA(ls_val_ref) WITH KEY material = iv_data_matnr.
   IF sy-subrc = 0 OR ls_centro_ref IS NOT INITIAL OR ls_venta_ref IS NOT INITIAL.
@@ -1063,7 +1084,15 @@ FORM fill_segments
     PERFORM append_segment USING 'E1BPE1MAW1RT' ls_maw1rt CHANGING ct_edidd.
   ENDIF.
 
-  " ---------- E1BPE1MARCRT (una instancia por centro) ----------
+  " ---------- E1BPE1MAKTRT ----------
+  CLEAR ls_maktrt.
+  ls_maktrt-material      = iv_data_matnr.
+  ls_maktrt-material_long = iv_data_matnr.
+  ls_maktrt-langu         = gc_default_langu.
+  ls_maktrt-matl_desc     = is_art-descripcion.
+  PERFORM append_segment USING 'E1BPE1MAKTRT' ls_maktrt CHANGING ct_edidd.
+
+  " ---------- E1BPE1MARCRT / E1BPE1MARCRT1 (una instancia por centro) ----------
   LOOP AT gt_centros INTO DATA(ls_centro) WHERE material = iv_data_matnr.
     CLEAR ls_marcrt.
     ls_marcrt-material      = iv_data_matnr.
@@ -1078,6 +1107,8 @@ FORM fill_segments
     ls_marcrt-countryori    = ls_centro-countryori.
     ls_marcrt-distr_prof    = ls_centro-distr_prof.
     ls_marcrt-neg_stocks    = ls_centro-neg_stocks.
+    ls_marcrt-sup_source    = ls_centro-sup_source.
+    ls_marcrt-round_val     = ls_centro-round_val.
 
     READ TABLE gt_almacenes INTO DATA(ls_alm_ref)
       WITH KEY material = iv_data_matnr plant = ls_centro-plant.
@@ -1086,6 +1117,10 @@ FORM fill_segments
     ENDIF.
 
     PERFORM append_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
+
+    CLEAR ls_marcrt1.
+    ls_marcrt1-material_long = iv_data_matnr.
+    PERFORM append_segment USING 'E1BPE1MARCRT1' ls_marcrt1 CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MARDRT (una instancia por centro + almacén) ----------
@@ -1098,17 +1133,44 @@ FORM fill_segments
     PERFORM append_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
   ENDLOOP.
 
-  " ---------- E1BPE1MARMRT / E1BPE1MEANRT (unidades y EAN) ----------
+  " ---------- E1BPE1MPOPRT / E1BPE1MPGDRT (técnicos, por centro) ----------
+  LOOP AT gt_centros INTO ls_centro WHERE material = iv_data_matnr.
+    CLEAR ls_mpoprt.
+    ls_mpoprt-material = iv_data_matnr.
+    ls_mpoprt-plant    = ls_centro-plant.
+    PERFORM append_segment USING 'E1BPE1MPOPRT' ls_mpoprt CHANGING ct_edidd.
+
+    CLEAR ls_mpgdrt.
+    ls_mpgdrt-material = iv_data_matnr.
+    ls_mpgdrt-plant    = ls_centro-plant.
+    PERFORM append_segment USING 'E1BPE1MPGDRT' ls_mpgdrt CHANGING ct_edidd.
+  ENDLOOP.
+
+  " ---------- E1BPE1MARMRT / E1BPE1MAMTRT / E1BPE1MEANRT (unidades y EAN) ----------
   LOOP AT gt_unidades_ean INTO DATA(ls_uni) WHERE material = iv_data_matnr.
     CLEAR ls_marmrt.
     ls_marmrt-material      = iv_data_matnr.
     ls_marmrt-material_long = iv_data_matnr.
-    ls_marmrt-alt_unit       = ls_uni-alt_unit.
-    ls_marmrt-numerator      = ls_uni-numerator.
-    ls_marmrt-denominatr      = ls_uni-denominatr.
-    ls_marmrt-ean_upc        = ls_uni-ean_upc.
-    ls_marmrt-ean_cat        = ls_uni-ean_cat.
+    ls_marmrt-alt_unit      = ls_uni-alt_unit.
+    ls_marmrt-unit          = ls_uni-alt_unit.
+    ls_marmrt-numerator     = ls_uni-numerator.
+    ls_marmrt-denominatr    = ls_uni-denominatr.
+    ls_marmrt-ean_upc       = ls_uni-ean_upc.
+    ls_marmrt-ean_cat       = ls_uni-ean_cat.
+    ls_marmrt-length        = ls_uni-length.
+    ls_marmrt-width         = ls_uni-width.
+    ls_marmrt-height        = ls_uni-height.
+    ls_marmrt-unit_dim      = ls_uni-unit_dim.
+    ls_marmrt-volume        = ls_uni-volume.
+    ls_marmrt-volumeunit    = ls_uni-volumeunit.
+    ls_marmrt-gross_wt      = ls_uni-gross_wt.
+    ls_marmrt-unit_of_wt    = ls_uni-unit_of_wt.
     PERFORM append_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
+
+    CLEAR ls_mamtrt.
+    ls_mamtrt-material = iv_data_matnr.
+    ls_mamtrt-alt_unit = ls_uni-alt_unit.
+    PERFORM append_segment USING 'E1BPE1MAMTRT' ls_mamtrt CHANGING ct_edidd.
 
     IF ls_uni-ean_upc IS NOT INITIAL.
       CLEAR ls_meanrt.
@@ -1156,6 +1218,7 @@ FORM fill_segments
     ls_mvkert-distr_chan      = ls_ven-distr_chan.
     ls_mvkert-item_cat        = ls_ven-item_cat.
     ls_mvkert-acct_assgt      = ls_ven-acct_assgt.
+    ls_mvkert-dely_unit       = ls_ven-dely_unit.
     ls_mvkert-list_st_fr      = ls_ven-fecha_inicio.
     ls_mvkert-list_dc_fr      = ls_ven-fecha_inicio.
     ls_mvkert-sell_st_fr      = ls_ven-fecha_inicio.

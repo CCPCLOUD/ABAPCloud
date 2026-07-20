@@ -70,6 +70,8 @@ TYPES:
     fashion_attr_2   TYPE c LENGTH 10,
     fashion_attr_3   TYPE c LENGTH 10,
     season_level     TYPE c LENGTH 4,
+    trans_grp        TYPE c LENGTH 4,
+    net_weight       TYPE c LENGTH 20,
     is_valid         TYPE abap_bool,
   END OF ty_articulo,
   ty_t_articulo TYPE STANDARD TABLE OF ty_articulo WITH EMPTY KEY.
@@ -88,6 +90,8 @@ TYPES:
     countryori   TYPE c LENGTH 3,
     distr_prof   TYPE c LENGTH 4,
     neg_stocks   TYPE c LENGTH 1,
+    sup_source   TYPE c LENGTH 1,
+    round_val    TYPE c LENGTH 20,
   END OF ty_centro,
   ty_t_centro TYPE STANDARD TABLE OF ty_centro WITH EMPTY KEY.
 
@@ -101,12 +105,20 @@ TYPES:
 
 TYPES:
   BEGIN OF ty_unidad_ean,
-    material  TYPE c LENGTH 40,
-    alt_unit  TYPE c LENGTH 3,
-    numerator TYPE c LENGTH 9,
-    denominatr TYPE c LENGTH 9,
-    ean_upc   TYPE c LENGTH 18,
-    ean_cat   TYPE c LENGTH 2,
+    material    TYPE c LENGTH 40,
+    alt_unit    TYPE c LENGTH 3,
+    numerator   TYPE c LENGTH 9,
+    denominatr  TYPE c LENGTH 9,
+    ean_upc     TYPE c LENGTH 18,
+    ean_cat     TYPE c LENGTH 2,
+    length      TYPE c LENGTH 20,
+    width       TYPE c LENGTH 20,
+    height      TYPE c LENGTH 20,
+    unit_dim    TYPE c LENGTH 3,
+    volume      TYPE c LENGTH 20,
+    volumeunit  TYPE c LENGTH 3,
+    gross_wt    TYPE c LENGTH 20,
+    unit_of_wt  TYPE c LENGTH 3,
   END OF ty_unidad_ean,
   ty_t_unidad_ean TYPE STANDARD TABLE OF ty_unidad_ean WITH EMPTY KEY.
 
@@ -143,6 +155,7 @@ TYPES:
     fecha_inicio TYPE c LENGTH 8,
     fecha_fin    TYPE c LENGTH 8,
     pr_ref_mat   TYPE c LENGTH 40,
+    dely_unit    TYPE c LENGTH 20,
   END OF ty_venta,
   ty_t_venta TYPE STANDARD TABLE OF ty_venta WITH EMPTY KEY.
 
@@ -234,23 +247,27 @@ TYPES:
     conf_matl     TYPE c LENGTH 18,
     pr_ref_mat    TYPE c LENGTH 18,
     item_cat      TYPE c LENGTH 4,
+    net_weight    TYPE c LENGTH 20,
+    trans_grp     TYPE c LENGTH 4,
   END OF ty_e1bpe1marart,
 
-  " NOTA: confirmado por RTTI contra el sistema real (ZTEST_SEGMENT_FIELDS)
-  " que E1BPE1MARART1 NO tiene FREE_CHAR_VALUE/BRAND_ID/FASHION_ATTRIBUTE_x/
-  " SEASON_LEVEL en este sistema; esos campos solo existen dentro de
-  " E1BPE1MARARTX. Como MARARTX se genera automáticamente como segmento
-  " de casillas de verificación (ver FILL_X_SEGMENT/APPEND_SEGMENT) y no
-  " está confirmado que ese segmento acepte valores reales (en vez de
-  " 'X') para esos campos específicos, de momento NO se envían Marca,
-  " Modelo, Atributos fashion ni Nivel de temporada a ningún segmento,
-  " para no arriesgarse a mandar un dato incorrecto. Pendiente de
-  " confirmar con el equipo funcional de Retail en qué segmento real
-  " deben viajar estos 4 campos.
+  " NOTA: la EF V3 reconfirma explícitamente (con matriz de aplicación
+  " Simple/Genérico/Variante) que estos 4 campos de negocio viajan en
+  " E1BPE1MARART1. Una revisión anterior por RTTI (ZTEST_SEGMENT_FIELDS)
+  " contra el sistema QS4 no los encontró ahí (solo dentro de
+  " E1BPE1MARARTX); si MAP_TO_REAL_SEGMENT vuelve a reportarlos como no
+  " encontrados, es una discrepancia real entre esta EF y el sistema que
+  " debe escalarse al equipo funcional de Retail, no un error del programa.
   BEGIN OF ty_e1bpe1marart1,
     material_long    TYPE c LENGTH 40,
     conf_matl_long   TYPE c LENGTH 40,
     pr_ref_mat_long  TYPE c LENGTH 40,
+    free_char_value  TYPE c LENGTH 20,
+    brand_id         TYPE c LENGTH 10,
+    fashion_attr_1   TYPE c LENGTH 10,
+    fashion_attr_2   TYPE c LENGTH 10,
+    fashion_attr_3   TYPE c LENGTH 10,
+    season_level     TYPE c LENGTH 4,
   END OF ty_e1bpe1marart1,
 
   BEGIN OF ty_e1bpe1maktrt,
@@ -274,7 +291,13 @@ TYPES:
     distr_prof    TYPE c LENGTH 4,
     neg_stocks    TYPE c LENGTH 1,
     sloc_exprc    TYPE c LENGTH 4,
+    sup_source    TYPE c LENGTH 1,
+    round_val     TYPE c LENGTH 20,
   END OF ty_e1bpe1marcrt,
+
+  BEGIN OF ty_e1bpe1marcrt1,
+    material_long TYPE c LENGTH 40,
+  END OF ty_e1bpe1marcrt1,
 
   BEGIN OF ty_e1bpe1mardrt,
     material      TYPE c LENGTH 18,
@@ -283,15 +306,45 @@ TYPES:
     stge_loc      TYPE c LENGTH 4,
   END OF ty_e1bpe1mardrt,
 
+  " Segmentos técnicos de planificación/análisis por Material + Centro,
+  " requeridos por la EF V3 con datos clave mínimos (MATERIAL/PLANT);
+  " el resto de campos de estos segmentos son valores por defecto que
+  " no dependen de captura de negocio.
+  BEGIN OF ty_e1bpe1mpoprt,
+    material TYPE c LENGTH 18,
+    plant    TYPE c LENGTH 4,
+  END OF ty_e1bpe1mpoprt,
+
+  BEGIN OF ty_e1bpe1mpgdrt,
+    material TYPE c LENGTH 18,
+    plant    TYPE c LENGTH 4,
+  END OF ty_e1bpe1mpgdrt,
+
   BEGIN OF ty_e1bpe1marmrt,
     material      TYPE c LENGTH 18,
     material_long TYPE c LENGTH 40,
     alt_unit      TYPE c LENGTH 3,
+    unit          TYPE c LENGTH 3,
     numerator     TYPE c LENGTH 9,
-    denominatr     TYPE c LENGTH 9,
+    denominatr    TYPE c LENGTH 9,
     ean_upc       TYPE c LENGTH 18,
     ean_cat       TYPE c LENGTH 2,
+    length        TYPE c LENGTH 20,
+    width         TYPE c LENGTH 20,
+    height        TYPE c LENGTH 20,
+    unit_dim      TYPE c LENGTH 3,
+    volume        TYPE c LENGTH 20,
+    volumeunit    TYPE c LENGTH 3,
+    gross_wt      TYPE c LENGTH 20,
+    unit_of_wt    TYPE c LENGTH 3,
   END OF ty_e1bpe1marmrt,
+
+  " Segmento de texto por Material + Unidad de medida (EF V3), datos
+  " clave mínimos.
+  BEGIN OF ty_e1bpe1mamtrt,
+    material TYPE c LENGTH 18,
+    alt_unit TYPE c LENGTH 3,
+  END OF ty_e1bpe1mamtrt,
 
   BEGIN OF ty_e1bpe1meanrt,
     material TYPE c LENGTH 18,
@@ -338,6 +391,7 @@ TYPES:
     sell_dc_to    TYPE c LENGTH 8,
     pr_ref_mat    TYPE c LENGTH 18,
     pr_ref_mat_long TYPE c LENGTH 40,
+    dely_unit     TYPE c LENGTH 20,
   END OF ty_e1bpe1mvkert,
 
   BEGIN OF ty_e1bpe1wlk2rt,
