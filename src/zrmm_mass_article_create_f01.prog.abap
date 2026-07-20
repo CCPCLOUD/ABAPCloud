@@ -1055,9 +1055,9 @@ FORM fill_segments
   ENDIF.
   ls_marart1-brand_id        = is_art-marca.
   ls_marart1-free_char_value = is_art-modelo.
-  ls_marart1-fashion_attr_1  = is_art-fashion_attr_1.
-  ls_marart1-fashion_attr_2  = is_art-fashion_attr_2.
-  ls_marart1-fashion_attr_3  = is_art-fashion_attr_3.
+  ls_marart1-fashion_attribute_1 = is_art-fashion_attr_1.
+  ls_marart1-fashion_attribute_2 = is_art-fashion_attr_2.
+  ls_marart1-fashion_attribute_3 = is_art-fashion_attr_3.
   ls_marart1-season_level    = is_art-season_level.
   PERFORM append_segment USING 'E1BPE1MARART1' ls_marart1 CHANGING ct_edidd.
 

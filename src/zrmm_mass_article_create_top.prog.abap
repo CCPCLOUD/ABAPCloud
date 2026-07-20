@@ -264,9 +264,9 @@ TYPES:
     pr_ref_mat_long  TYPE c LENGTH 40,
     free_char_value  TYPE c LENGTH 20,
     brand_id         TYPE c LENGTH 10,
-    fashion_attr_1   TYPE c LENGTH 10,
-    fashion_attr_2   TYPE c LENGTH 10,
-    fashion_attr_3   TYPE c LENGTH 10,
+    fashion_attribute_1 TYPE c LENGTH 10,
+    fashion_attribute_2 TYPE c LENGTH 10,
+    fashion_attribute_3 TYPE c LENGTH 10,
     season_level     TYPE c LENGTH 4,
   END OF ty_e1bpe1marart1,
 
