@@ -1138,17 +1138,11 @@ FORM fill_segments
     PERFORM append_x_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
   ENDLOOP.
 
-  " ---------- E1BPE1MARDRT (una instancia por centro + almacén) ----------
-  LOOP AT gt_almacenes INTO DATA(ls_almacen) WHERE material = iv_data_matnr.
-    CLEAR ls_mardrt.
-    ls_mardrt-material      = iv_data_matnr.
-    ls_mardrt-material_long = iv_data_matnr.
-    ls_mardrt-plant         = ls_almacen-plant.
-    ls_mardrt-stge_loc      = ls_almacen-stge_loc.
-    PERFORM append_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
-  ENDLOOP.
-
   " ---------- E1BPE1MPOPRT / E1BPE1MPGDRT (técnicos, por centro) ----------
+  " NOTA: el árbol WE30 de ARTMAS09 define, a nivel de centro, la
+  " secuencia MARCRT -> MPOPRT -> MPGDRT -> MARDRT. MPOPRT/MPGDRT
+  " deben ir ANTES de MARDRT (antes se generaban en orden inverso,
+  " lo que provocaba el error 26 con parámetro 3 = E1BPE1MARCRT).
   LOOP AT gt_centros INTO ls_centro WHERE material = iv_data_matnr.
     CLEAR ls_mpoprt.
     ls_mpoprt-material = iv_data_matnr.
@@ -1159,6 +1153,16 @@ FORM fill_segments
     ls_mpgdrt-material = iv_data_matnr.
     ls_mpgdrt-plant    = ls_centro-plant.
     PERFORM append_segment USING 'E1BPE1MPGDRT' ls_mpgdrt CHANGING ct_edidd.
+  ENDLOOP.
+
+  " ---------- E1BPE1MARDRT (una instancia por centro + almacén) ----------
+  LOOP AT gt_almacenes INTO DATA(ls_almacen) WHERE material = iv_data_matnr.
+    CLEAR ls_mardrt.
+    ls_mardrt-material      = iv_data_matnr.
+    ls_mardrt-material_long = iv_data_matnr.
+    ls_mardrt-plant         = ls_almacen-plant.
+    ls_mardrt-stge_loc      = ls_almacen-stge_loc.
+    PERFORM append_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MARMRT / E1BPE1MAMTRT / E1BPE1MEANRT (unidades y EAN) ----------
