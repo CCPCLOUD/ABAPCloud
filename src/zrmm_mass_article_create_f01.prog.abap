@@ -1189,7 +1189,10 @@ FORM fill_segments
     CLEAR ls_mamtrt.
     ls_mamtrt-material = iv_data_matnr.
     ls_mamtrt-alt_unit = ls_uni-alt_unit.
-    PERFORM append_segment USING 'E1BPE1MAMTRT' ls_mamtrt CHANGING ct_edidd.
+    " E1BPE1MAMTRTX no aparece en el árbol WE30 de ARTMAS09 (mismo
+    " patrón que MAKTRTX/MLANRTX/MEANRTX/FSHSEASONSX): se usa
+    " append_data_segment.
+    PERFORM append_data_segment USING 'E1BPE1MAMTRT' ls_mamtrt CHANGING ct_edidd.
 
     IF ls_uni-ean_upc IS NOT INITIAL.
       CLEAR ls_meanrt.
