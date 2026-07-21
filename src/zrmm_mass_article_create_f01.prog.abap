@@ -1355,7 +1355,10 @@ FORM map_to_real_segment
       " RTTI que su ausencia puntual en algunos segmentos (sobre todo
       " variantes X) es normal y no implica pérdida de datos de
       " negocio, así que no se reporta como advertencia.
-      IF NOT ls_comp-name CP '*_LONG'.
+      " Caso puntual: E1BPE1MARMRTX-UNIT no existe en este sistema;
+      " UNIT es copia de ALT_UNIT (2.4.4/EF V3), mismo caso que _LONG.
+      IF NOT ( ls_comp-name CP '*_LONG' OR
+               ( iv_segnam = 'E1BPE1MARMRTX' AND ls_comp-name = 'UNIT' ) ).
         lv_msg = |{ iv_segnam }-{ ls_comp-name }: campo no existe en la estructura real|.
         PERFORM register_unmapped USING lv_msg.
       ENDIF.
