@@ -1045,8 +1045,12 @@ FORM fill_segments
                                     THEN ls_venta_ref-pr_ref_mat ELSE iv_header_matnr ).
   ENDIF.
   ls_marart-item_cat = ls_venta_ref-item_cat.
-  PERFORM append_segment USING 'E1BPE1MARART' ls_marart CHANGING ct_edidd.
+  PERFORM append_data_segment USING 'E1BPE1MARART' ls_marart CHANGING ct_edidd.
 
+  " NOTA: E1BPE1MARART1 es HIJO de E1BPE1MARART en la jerarquía WE30
+  " del tipo básico ARTMAS09, y debe insertarse ANTES del segmento
+  " E1BPE1MARARTX (hermano de MARART). Por eso el X de MARART se
+  " genera aquí, después de MARART1, y no inmediatamente tras MARART.
   CLEAR ls_marart1.
   ls_marart1-material_long   = iv_data_matnr.
   IF is_art-tipo_carga = gc_cat_variante.
@@ -1060,6 +1064,8 @@ FORM fill_segments
   ls_marart1-fashion_attribute_3 = is_art-fashion_attr_3.
   ls_marart1-season_level    = is_art-season_level.
   PERFORM append_segment USING 'E1BPE1MARART1' ls_marart1 CHANGING ct_edidd.
+
+  PERFORM append_x_segment USING 'E1BPE1MARART' ls_marart CHANGING ct_edidd.
 
   " ---------- E1BPE1MAW1RT (derivado, primer centro/valoración/venta) ----------
   " NOTA: la EF V3 exige generar E1BPE1MAW1RT ANTES de E1BPE1MAKTRT.
@@ -1116,11 +1122,15 @@ FORM fill_segments
       ls_marcrt-sloc_exprc = ls_alm_ref-stge_loc.
     ENDIF.
 
-    PERFORM append_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
 
+    " NOTA: igual que MARART1, E1BPE1MARCRT1 es hijo de E1BPE1MARCRT
+    " en WE30 y debe ir antes de E1BPE1MARCRTX.
     CLEAR ls_marcrt1.
     ls_marcrt1-material_long = iv_data_matnr.
     PERFORM append_segment USING 'E1BPE1MARCRT1' ls_marcrt1 CHANGING ct_edidd.
+
+    PERFORM append_x_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MARDRT (una instancia por centro + almacén) ----------
@@ -1178,7 +1188,11 @@ FORM fill_segments
       ls_meanrt-unit     = ls_uni-alt_unit.
       ls_meanrt-ean_upc  = ls_uni-ean_upc.
       ls_meanrt-ean_cat  = ls_uni-ean_cat.
-      PERFORM append_segment USING 'E1BPE1MEANRT' ls_meanrt CHANGING ct_edidd.
+      " E1BPE1MEANRTX NO forma parte del árbol de segmentos de ARTMAS09
+      " (confirmado en WE30), aunque la estructura exista de forma
+      " genérica en el diccionario. Se usa append_data_segment para no
+      " generarlo.
+      PERFORM append_data_segment USING 'E1BPE1MEANRT' ls_meanrt CHANGING ct_edidd.
     ENDIF.
   ENDLOOP.
 
@@ -1257,10 +1271,29 @@ FORM fill_segments
 ENDFORM.
 
 *&---------------------------------------------------------------*
-*& FORM append_segment - agrega segmento RT + su segmento X asociado
-*&                       (checkbox) a la tabla EDIDD del IDoc.
+*& FORM append_data_segment - agrega únicamente el segmento RT
+*&                            (de datos) a la tabla EDIDD del IDoc,
+*&                            sin generar su segmento X asociado.
 *&---------------------------------------------------------------*
-FORM append_segment
+FORM append_data_segment
+  USING    iv_segnam TYPE edidd-segnam
+           is_data    TYPE any
+  CHANGING ct_edidd  TYPE STANDARD TABLE.
+
+  DATA: ls_edidd TYPE edidd.
+
+  CLEAR ls_edidd.
+  ls_edidd-segnam = iv_segnam.
+  PERFORM map_to_real_segment USING iv_segnam is_data CHANGING ls_edidd-sdata.
+  APPEND ls_edidd TO ct_edidd.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM append_x_segment - agrega el segmento X (casilla de
+*&                         verificación) asociado a iv_segnam, si
+*&                         existe realmente en el tipo básico.
+*&---------------------------------------------------------------*
+FORM append_x_segment
   USING    iv_segnam TYPE edidd-segnam
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
@@ -1270,11 +1303,6 @@ FORM append_segment
         lr_x_exists TYPE REF TO data,
         lv_segnamx  TYPE edidd-segnam.
   FIELD-SYMBOLS: <ls_data_x> TYPE any.
-
-  CLEAR ls_edidd.
-  ls_edidd-segnam = iv_segnam.
-  PERFORM map_to_real_segment USING iv_segnam is_data CHANGING ls_edidd-sdata.
-  APPEND ls_edidd TO ct_edidd.
 
   " Segmento de casilla de verificación (X) - marca los campos poblados
   " para indicar a SAP qué atributos crear (detalle técnico, 2.4.5).
@@ -1301,6 +1329,23 @@ FORM append_segment
   ls_edidd-segnam = lv_segnamx.
   PERFORM map_to_real_segment USING lv_segnamx <ls_data_x> CHANGING ls_edidd-sdata.
   APPEND ls_edidd TO ct_edidd.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM append_segment - agrega segmento RT + su segmento X asociado
+*&                       (checkbox) a la tabla EDIDD del IDoc, en ese
+*&                       orden. Usar append_data_segment/
+*&                       append_x_segment por separado cuando un
+*&                       segmento hijo (p.ej. MARART1) deba insertarse
+*&                       ENTRE el RT y su X (jerarquía WE30).
+*&---------------------------------------------------------------*
+FORM append_segment
+  USING    iv_segnam TYPE edidd-segnam
+           is_data    TYPE any
+  CHANGING ct_edidd  TYPE STANDARD TABLE.
+
+  PERFORM append_data_segment USING iv_segnam is_data CHANGING ct_edidd.
+  PERFORM append_x_segment USING iv_segnam is_data CHANGING ct_edidd.
 ENDFORM.
 
 *&---------------------------------------------------------------*
