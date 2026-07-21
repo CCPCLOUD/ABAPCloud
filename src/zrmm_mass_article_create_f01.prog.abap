@@ -1091,12 +1091,17 @@ FORM fill_segments
   ENDIF.
 
   " ---------- E1BPE1MAKTRT ----------
+  " E1BPE1MAKTRTX NO forma parte del árbol de segmentos de ARTMAS09
+  " (confirmado por SAP: mensaje E0078 "no aparece en el nivel actual
+  " del tipo base ARTMAS09"), aunque la estructura exista de forma
+  " genérica en el diccionario. Se usa append_data_segment para no
+  " generarlo (mismo caso que E1BPE1MEANRTX).
   CLEAR ls_maktrt.
   ls_maktrt-material      = iv_data_matnr.
   ls_maktrt-material_long = iv_data_matnr.
   ls_maktrt-langu         = gc_default_langu.
   ls_maktrt-matl_desc     = is_art-descripcion.
-  PERFORM append_segment USING 'E1BPE1MAKTRT' ls_maktrt CHANGING ct_edidd.
+  PERFORM append_data_segment USING 'E1BPE1MAKTRT' ls_maktrt CHANGING ct_edidd.
 
   " ---------- E1BPE1MARCRT / E1BPE1MARCRT1 (una instancia por centro) ----------
   LOOP AT gt_centros INTO DATA(ls_centro) WHERE material = iv_data_matnr.
@@ -1206,7 +1211,9 @@ FORM fill_segments
     ls_mlanrt-taxclass_1    = ls_imp-taxclass_1.
     ls_mlanrt-tax_type_2    = ls_imp-tax_type_2.
     ls_mlanrt-taxclass_2    = ls_imp-taxclass_2.
-    PERFORM append_segment USING 'E1BPE1MLANRT' ls_mlanrt CHANGING ct_edidd.
+    " E1BPE1MLANRTX no aparece en el árbol WE30 de ARTMAS09 (mismo
+    " patrón que MAKTRTX/MEANRTX): se usa append_data_segment.
+    PERFORM append_data_segment USING 'E1BPE1MLANRT' ls_mlanrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MBEWRT (valoración) ----------
@@ -1266,7 +1273,9 @@ FORM fill_segments
     ls_fshseason-season_yr     = ls_temp-season_yr.
     ls_fshseason-season        = ls_temp-season.
     ls_fshseason-season_long   = ls_temp-season.
-    PERFORM append_segment USING 'E1BPFSHSEASONS' ls_fshseason CHANGING ct_edidd.
+    " E1BPFSHSEASONSX no aparece en el árbol WE30 de ARTMAS09 (mismo
+    " patrón que MAKTRTX/MEANRTX): se usa append_data_segment.
+    PERFORM append_data_segment USING 'E1BPFSHSEASONS' ls_fshseason CHANGING ct_edidd.
   ENDLOOP.
 ENDFORM.
 
