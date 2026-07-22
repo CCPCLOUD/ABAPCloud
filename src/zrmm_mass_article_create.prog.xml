@@ -28,6 +28,12 @@
      <ENTRY>Opciones de ejecución</ENTRY>
      <LENGTH>22</LENGTH>
     </item>
+    <item>
+     <KEY>003</KEY>
+     <ID>I</ID>
+     <ENTRY>Destinatario ALE (EDIDC)</ENTRY>
+     <LENGTH>25</LENGTH>
+    </item>
    </TPOOL>
   </asx:values>
  </asx:abap>

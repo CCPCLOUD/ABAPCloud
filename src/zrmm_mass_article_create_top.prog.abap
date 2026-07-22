@@ -442,6 +442,12 @@ PARAMETERS:
   p_stop TYPE xfeld AS CHECKBOX DEFAULT space.               " Detener en error (2.3)
 SELECTION-SCREEN END OF BLOCK b2.
 
+SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE TEXT-003.
+PARAMETERS:
+  p_rcvpt TYPE edidc-rcvprt DEFAULT 'LS',            " Tipo interlocutor destino (WE20)
+  p_rcvpn TYPE edidc-rcvprn DEFAULT 'QS4CLNT100'.    " Nº interlocutor destino (WE20)
+SELECTION-SCREEN END OF BLOCK b3.
+
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X
 *&---------------------------------------------------------------*

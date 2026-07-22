@@ -851,6 +851,13 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
   ls_edidc-mestyp = gc_mestyp.
   ls_edidc-idoctp = gc_idoctyp.
   ls_edidc-direct = '1'.   " Outbound desde la Z / Inbound hacia procesamiento estándar
+  " Destinatario explícito (evita depender de que MASTER_IDOC_DISTRIBUTE
+  " lo resuelva vía modelo de distribución BD64; usa el socio EDI
+  " configurado en WE20 para el mensaje ARTMAS).
+  IF p_rcvpn IS NOT INITIAL.
+    ls_edidc-rcvprt = p_rcvpt.
+    ls_edidc-rcvprn = p_rcvpn.
+  ENDIF.
 
   CALL FUNCTION 'MASTER_IDOC_DISTRIBUTE'
     EXPORTING
