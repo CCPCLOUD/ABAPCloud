@@ -1104,6 +1104,16 @@ FORM fill_segments
   PERFORM append_data_segment USING 'E1BPE1MAKTRT' ls_maktrt CHANGING ct_edidd.
 
   " ---------- E1BPE1MARCRT / E1BPE1MARCRT1 (una instancia por centro) ----------
+  " NOTA: cuando hay varios centros, SAP exige (confirmado con un
+  " IDoc de referencia correctamente distribuido, status 03) que
+  " PRIMERO se generen TODAS las instancias de E1BPE1MARCRT con su
+  " hijo E1BPE1MARCRT1, y SOLO DESPUÉS, al final, TODOS los
+  " E1BPE1MARCRTX correspondientes (uno por cada centro, en el mismo
+  " orden). NO se intercala RT/hijo/X por cada centro como en otros
+  " segmentos - este patrón es específico de MARCRT cuando se repite.
+  DATA: lt_marcrt TYPE STANDARD TABLE OF ty_e1bpe1marcrt.
+  CLEAR lt_marcrt.
+
   LOOP AT gt_centros INTO DATA(ls_centro) WHERE material = iv_data_matnr.
     CLEAR ls_marcrt.
     ls_marcrt-material      = iv_data_matnr.
@@ -1128,13 +1138,16 @@ FORM fill_segments
     ENDIF.
 
     PERFORM append_data_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
+    APPEND ls_marcrt TO lt_marcrt.
 
     " NOTA: igual que MARART1, E1BPE1MARCRT1 es hijo de E1BPE1MARCRT
-    " en WE30 y debe ir antes de E1BPE1MARCRTX.
+    " en WE30 y debe ir junto a su padre (antes del bloque de X).
     CLEAR ls_marcrt1.
     ls_marcrt1-material_long = iv_data_matnr.
     PERFORM append_segment USING 'E1BPE1MARCRT1' ls_marcrt1 CHANGING ct_edidd.
+  ENDLOOP.
 
+  LOOP AT lt_marcrt INTO ls_marcrt.
     PERFORM append_x_segment USING 'E1BPE1MARCRT' ls_marcrt CHANGING ct_edidd.
   ENDLOOP.
 
