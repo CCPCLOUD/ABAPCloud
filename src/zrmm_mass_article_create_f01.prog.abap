@@ -1156,26 +1156,53 @@ FORM fill_segments
   " secuencia MARCRT -> MPOPRT -> MPGDRT -> MARDRT. MPOPRT/MPGDRT
   " deben ir ANTES de MARDRT (antes se generaban en orden inverso,
   " lo que provocaba el error 26 con parámetro 3 = E1BPE1MARCRT).
+  " Igual que MARCRT, con varios centros SAP exige (confirmado con
+  " IDoc de referencia status 03) generar PRIMERO todas las
+  " instancias de MPOPRT y solo AL FINAL todas las MPOPRTX; luego lo
+  " mismo para MPGDRT/MPGDRTX (por bloques, no intercalado).
+  DATA: lt_mpoprt TYPE STANDARD TABLE OF ty_e1bpe1mpoprt,
+        lt_mpgdrt TYPE STANDARD TABLE OF ty_e1bpe1mpgdrt.
+  CLEAR: lt_mpoprt, lt_mpgdrt.
+
   LOOP AT gt_centros INTO ls_centro WHERE material = iv_data_matnr.
     CLEAR ls_mpoprt.
     ls_mpoprt-material = iv_data_matnr.
     ls_mpoprt-plant    = ls_centro-plant.
-    PERFORM append_segment USING 'E1BPE1MPOPRT' ls_mpoprt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MPOPRT' ls_mpoprt CHANGING ct_edidd.
+    APPEND ls_mpoprt TO lt_mpoprt.
+  ENDLOOP.
+  LOOP AT lt_mpoprt INTO ls_mpoprt.
+    PERFORM append_x_segment USING 'E1BPE1MPOPRT' ls_mpoprt CHANGING ct_edidd.
+  ENDLOOP.
 
+  LOOP AT gt_centros INTO ls_centro WHERE material = iv_data_matnr.
     CLEAR ls_mpgdrt.
     ls_mpgdrt-material = iv_data_matnr.
     ls_mpgdrt-plant    = ls_centro-plant.
-    PERFORM append_segment USING 'E1BPE1MPGDRT' ls_mpgdrt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MPGDRT' ls_mpgdrt CHANGING ct_edidd.
+    APPEND ls_mpgdrt TO lt_mpgdrt.
+  ENDLOOP.
+  LOOP AT lt_mpgdrt INTO ls_mpgdrt.
+    PERFORM append_x_segment USING 'E1BPE1MPGDRT' ls_mpgdrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MARDRT (una instancia por centro + almacén) ----------
+  " Mismo patrón por bloques que MARCRT/MPOPRT/MPGDRT: todas las
+  " instancias de MARDRT primero, todas las MARDRTX al final.
+  DATA: lt_mardrt TYPE STANDARD TABLE OF ty_e1bpe1mardrt.
+  CLEAR lt_mardrt.
+
   LOOP AT gt_almacenes INTO DATA(ls_almacen) WHERE material = iv_data_matnr.
     CLEAR ls_mardrt.
     ls_mardrt-material      = iv_data_matnr.
     ls_mardrt-material_long = iv_data_matnr.
     ls_mardrt-plant         = ls_almacen-plant.
     ls_mardrt-stge_loc      = ls_almacen-stge_loc.
-    PERFORM append_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
+    APPEND ls_mardrt TO lt_mardrt.
+  ENDLOOP.
+  LOOP AT lt_mardrt INTO ls_mardrt.
+    PERFORM append_x_segment USING 'E1BPE1MARDRT' ls_mardrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MARMRT / E1BPE1MAMTRT / E1BPE1MEANRT (unidades y EAN) ----------
