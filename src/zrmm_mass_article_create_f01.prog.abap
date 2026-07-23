@@ -856,6 +856,7 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
   " configurado en WE20 para el mensaje ARTMAS).
   ls_edidc-rcvprt = gc_rcvprt.
   ls_edidc-rcvprn = gc_rcvprn.
+  ls_edidc-rcvpor = gc_rcvpor.
 
   CALL FUNCTION 'MASTER_IDOC_DISTRIBUTE'
     EXPORTING

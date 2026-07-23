@@ -446,7 +446,8 @@ SELECTION-SCREEN END OF BLOCK b2.
 " el mensaje ARTMAS en este sistema).
 CONSTANTS:
   gc_rcvprt TYPE edidc-rcvprt VALUE 'LS',
-  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100'.
+  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100',
+  gc_rcvpor TYPE edidc-rcvpor VALUE 'SAPQS4'.
 
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X
