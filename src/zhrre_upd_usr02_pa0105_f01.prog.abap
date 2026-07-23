@@ -105,63 +105,81 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 FORM update_pa0105_subty_0010.
 
-  DATA: lt_return TYPE STANDARD TABLE OF bapireturn1,
-        ls_return TYPE bapireturn1,
-        ls_key    TYPE prelp-pskey,
-        ls_record TYPE p0105,
-        lv_pernr  TYPE pa0105-pernr.
+  DATA: lt_return      TYPE STANDARD TABLE OF bapireturn1,
+        ls_return      TYPE bapireturn1,
+        ls_key         TYPE prelp-pskey,
+        ls_record      TYPE p0105,
+        lv_pernr       TYPE pa0105-pernr,
+        lt_netuser_cpy TYPE STANDARD TABLE OF ty_netuser.
 
-  REFRESH gt_netuser.
+  REFRESH: gt_netuser, gt_pa0105_comm.
 
-* Single bulk lookup: LEFT OUTER JOIN so unmatched ZSOX_NETUSER rows
-* (no PA0105 record yet) come back with PA0105 fields initial, instead
-* of one SELECT SINGLE per row. A plain INNER JOIN cannot be used here
-* since it would drop the rows that still need to be created. The ON
-* condition of an outer join only allows '=' comparisons, so the
-* BEGDA/ENDDA validity check is done afterwards in ABAP.
-  SELECT z~wikey z~adid
-         p~pernr p~objps p~sprps p~begda p~endda p~usrid_long
+  SELECT wikey adid
     INTO TABLE gt_netuser
-    FROM zsox_netuser AS z
-    LEFT OUTER JOIN pa0105 AS p
-      ON p~pernr = z~wikey
-     AND p~subty = '0010'.
+    FROM zsox_netuser.
 
-* Flag, per row, the PA0105 record that is valid today
+* Convert WIKEY to PERNR format (a plain MOVE performs the implicit
+* CHAR -> NUMC zero-padding). Comparing WIKEY directly against PERNR
+* inside a JOIN/WHERE pushed to the database skips that conversion, so
+* '1975' would never match the stored '00001975' - hence doing it here.
+* Rows that are not numeric (e.g. 'TEMP', 'TEST') are dropped.
   LOOP AT gt_netuser INTO gs_netuser.
-    IF gs_netuser-pernr IS NOT INITIAL
-       AND gs_netuser-begda <= sy-datum
-       AND gs_netuser-endda >= sy-datum.
-      gs_netuser-is_valid = abap_true.
+    IF gs_netuser-wikey CO '0123456789 '.
+      gs_netuser-pernr = gs_netuser-wikey.
+      MODIFY gt_netuser FROM gs_netuser TRANSPORTING pernr.
     ELSE.
-      gs_netuser-is_valid = abap_false.
+      DELETE gt_netuser.
     ENDIF.
-    MODIFY gt_netuser FROM gs_netuser TRANSPORTING is_valid.
   ENDLOOP.
 
-* Keep, per WIKEY, the record valid today (if any); otherwise keep one
-* row with PA0105 fields initial so it is treated as an insert.
-  SORT gt_netuser BY wikey ASCENDING is_valid DESCENDING.
-  DELETE ADJACENT DUPLICATES FROM gt_netuser COMPARING wikey.
+  CHECK gt_netuser IS NOT INITIAL.
+
+* Copy without duplicates for the FOR ALL ENTRIES lookup
+  lt_netuser_cpy[] = gt_netuser.
+  SORT lt_netuser_cpy BY pernr.
+  DELETE ADJACENT DUPLICATES FROM lt_netuser_cpy COMPARING pernr.
+
+  SELECT pernr objps sprps begda endda usrid_long
+    INTO TABLE gt_pa0105_comm
+    FROM pa0105
+    FOR ALL ENTRIES IN lt_netuser_cpy
+    WHERE pernr = lt_netuser_cpy-pernr
+      AND subty = '0010'.
+
+  FREE lt_netuser_cpy.
+
+* Flag, per row, the PA0105 record that is valid today
+  LOOP AT gt_pa0105_comm INTO gs_pa0105_comm.
+    IF gs_pa0105_comm-begda <= sy-datum
+       AND gs_pa0105_comm-endda >= sy-datum.
+      gs_pa0105_comm-is_valid = abap_true.
+    ELSE.
+      gs_pa0105_comm-is_valid = abap_false.
+    ENDIF.
+    MODIFY gt_pa0105_comm FROM gs_pa0105_comm TRANSPORTING is_valid.
+  ENDLOOP.
+
+* Keep, per PERNR, the record valid today (if any)
+  SORT gt_pa0105_comm BY pernr ASCENDING is_valid DESCENDING.
+  DELETE ADJACENT DUPLICATES FROM gt_pa0105_comm COMPARING pernr.
 
   LOOP AT gt_netuser INTO gs_netuser.
 
-* Skip WIKEY values that are not a valid PERNR (e.g. 'TEMP', 'TEST')
-    CHECK gs_netuser-wikey CO '0123456789 '.
+    lv_pernr = gs_netuser-pernr.
 
-    CLEAR lv_pernr.
-    lv_pernr = gs_netuser-wikey.
+    READ TABLE gt_pa0105_comm INTO gs_pa0105_comm
+      WITH KEY pernr = gs_netuser-pernr BINARY SEARCH.
 
-    IF gs_netuser-is_valid = abap_true.
+    IF sy-subrc = 0 AND gs_pa0105_comm-is_valid = abap_true.
 
-      CHECK gs_netuser-usrid_long <> gs_netuser-adid.
+      CHECK gs_pa0105_comm-usrid_long <> gs_netuser-adid.
 
       CLEAR ls_record.
-      ls_record-pernr      = gs_netuser-pernr.
+      ls_record-pernr      = gs_pa0105_comm-pernr.
       ls_record-subty      = '0010'.
-      ls_record-objps      = gs_netuser-objps.
-      ls_record-begda      = gs_netuser-begda.
-      ls_record-endda      = gs_netuser-endda.
+      ls_record-objps      = gs_pa0105_comm-objps.
+      ls_record-begda      = gs_pa0105_comm-begda.
+      ls_record-endda      = gs_pa0105_comm-endda.
       ls_record-usrid_long = gs_netuser-adid.
 
       CLEAR: lt_return, ls_key.
@@ -171,10 +189,10 @@ FORM update_pa0105_subty_0010.
           infty         = '0105'
           number        = lv_pernr
           subtype       = '0010'
-          objectid      = gs_netuser-objps
-          lockindicator = gs_netuser-sprps
-          validitybegin = gs_netuser-begda
-          validityend   = gs_netuser-endda
+          objectid      = gs_pa0105_comm-objps
+          lockindicator = gs_pa0105_comm-sprps
+          validitybegin = gs_pa0105_comm-begda
+          validityend   = gs_pa0105_comm-endda
           record        = ls_record
           operation     = 'MOD'
           tclas         = 'A'

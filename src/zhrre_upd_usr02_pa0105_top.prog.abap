@@ -28,8 +28,12 @@ TYPES: BEGIN OF ty_usr02_pa0105,
        END OF ty_usr02_pa0105.
 
 TYPES: BEGIN OF ty_netuser,
-         wikey      TYPE zsox_netuser-wikey,
-         adid       TYPE zsox_netuser-adid,
+         wikey TYPE zsox_netuser-wikey,
+         adid  TYPE zsox_netuser-adid,
+         pernr TYPE pa0105-pernr,
+       END OF ty_netuser.
+
+TYPES: BEGIN OF ty_pa0105_comm,
          pernr      TYPE pa0105-pernr,
          objps      TYPE pa0105-objps,
          sprps      TYPE pa0105-sprps,
@@ -37,7 +41,7 @@ TYPES: BEGIN OF ty_netuser,
          endda      TYPE pa0105-endda,
          usrid_long TYPE pa0105-usrid_long,
          is_valid   TYPE abap_bool,
-       END OF ty_netuser.
+       END OF ty_pa0105_comm.
 
 TYPES: BEGIN OF ty_usr21,
          bname      TYPE usr21-bname,
@@ -59,6 +63,8 @@ DATA: gt_usr02_pa0105 TYPE STANDARD TABLE OF ty_usr02_pa0105,
       gs_usr02_pa0105 TYPE ty_usr02_pa0105,
       gt_netuser      TYPE STANDARD TABLE OF ty_netuser,
       gs_netuser      TYPE ty_netuser,
+      gt_pa0105_comm  TYPE STANDARD TABLE OF ty_pa0105_comm,
+      gs_pa0105_comm  TYPE ty_pa0105_comm,
       gt_usr21        TYPE STANDARD TABLE OF ty_usr21,
       gs_usr21        TYPE ty_usr21,
       gt_pa0001_kostl TYPE STANDARD TABLE OF ty_pa0001_kostl,
