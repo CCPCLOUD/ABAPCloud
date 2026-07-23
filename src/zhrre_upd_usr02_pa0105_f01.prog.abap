@@ -113,30 +113,38 @@ FORM update_pa0105_subty_0010.
 
   REFRESH gt_netuser.
 
-  SELECT wikey adid
+* Single bulk lookup: LEFT OUTER JOIN so unmatched ZSOX_NETUSER rows
+* (no PA0105 record yet) come back with PA0105 fields initial, instead
+* of one SELECT SINGLE per row. A plain INNER JOIN cannot be used here
+* since it would drop the rows that still need to be created.
+  SELECT z~wikey z~adid
+         p~pernr p~objps p~sprps p~begda p~endda p~usrid_long
     INTO TABLE gt_netuser
-    FROM zsox_netuser.
+    FROM zsox_netuser AS z
+    LEFT OUTER JOIN pa0105 AS p
+      ON p~pernr = z~wikey
+     AND p~subty = '0010'
+     AND p~begda <= sy-datum
+     AND p~endda >= sy-datum.
 
   LOOP AT gt_netuser INTO gs_netuser.
+
+* Skip WIKEY values that are not a valid PERNR (e.g. 'TEMP', 'TEST')
+    CHECK gs_netuser-wikey CO '0123456789 '.
 
     CLEAR lv_pernr.
     lv_pernr = gs_netuser-wikey.
 
-    CLEAR gs_pa0105.
-    SELECT SINGLE *
-      INTO gs_pa0105
-      FROM pa0105
-      WHERE pernr = lv_pernr
-        AND subty = '0010'
-        AND begda <= sy-datum
-        AND endda >= sy-datum.
+    IF gs_netuser-pernr IS NOT INITIAL.
 
-    IF sy-subrc = 0.
-
-      CHECK gs_pa0105-usrid_long <> gs_netuser-adid.
+      CHECK gs_netuser-usrid_long <> gs_netuser-adid.
 
       CLEAR ls_record.
-      MOVE-CORRESPONDING gs_pa0105 TO ls_record.
+      ls_record-pernr      = gs_netuser-pernr.
+      ls_record-subty      = '0010'.
+      ls_record-objps      = gs_netuser-objps.
+      ls_record-begda      = gs_netuser-begda.
+      ls_record-endda      = gs_netuser-endda.
       ls_record-usrid_long = gs_netuser-adid.
 
       CLEAR: lt_return, ls_key.
@@ -146,10 +154,10 @@ FORM update_pa0105_subty_0010.
           infty         = '0105'
           number        = lv_pernr
           subtype       = '0010'
-          objectid      = gs_pa0105-objps
-          lockindicator = gs_pa0105-sprps
-          validitybegin = gs_pa0105-begda
-          validityend   = gs_pa0105-endda
+          objectid      = gs_netuser-objps
+          lockindicator = gs_netuser-sprps
+          validitybegin = gs_netuser-begda
+          validityend   = gs_netuser-endda
           record        = ls_record
           operation     = 'MOD'
           tclas         = 'A'
