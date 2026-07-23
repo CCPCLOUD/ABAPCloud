@@ -36,6 +36,7 @@ TYPES: BEGIN OF ty_netuser,
          begda      TYPE pa0105-begda,
          endda      TYPE pa0105-endda,
          usrid_long TYPE pa0105-usrid_long,
+         is_valid   TYPE abap_bool,
        END OF ty_netuser.
 
 TYPES: BEGIN OF ty_usr21,

@@ -116,16 +116,33 @@ FORM update_pa0105_subty_0010.
 * Single bulk lookup: LEFT OUTER JOIN so unmatched ZSOX_NETUSER rows
 * (no PA0105 record yet) come back with PA0105 fields initial, instead
 * of one SELECT SINGLE per row. A plain INNER JOIN cannot be used here
-* since it would drop the rows that still need to be created.
+* since it would drop the rows that still need to be created. The ON
+* condition of an outer join only allows '=' comparisons, so the
+* BEGDA/ENDDA validity check is done afterwards in ABAP.
   SELECT z~wikey z~adid
          p~pernr p~objps p~sprps p~begda p~endda p~usrid_long
     INTO TABLE gt_netuser
     FROM zsox_netuser AS z
     LEFT OUTER JOIN pa0105 AS p
       ON p~pernr = z~wikey
-     AND p~subty = '0010'
-     AND p~begda <= sy-datum
-     AND p~endda >= sy-datum.
+     AND p~subty = '0010'.
+
+* Flag, per row, the PA0105 record that is valid today
+  LOOP AT gt_netuser INTO gs_netuser.
+    IF gs_netuser-pernr IS NOT INITIAL
+       AND gs_netuser-begda <= sy-datum
+       AND gs_netuser-endda >= sy-datum.
+      gs_netuser-is_valid = abap_true.
+    ELSE.
+      gs_netuser-is_valid = abap_false.
+    ENDIF.
+    MODIFY gt_netuser FROM gs_netuser TRANSPORTING is_valid.
+  ENDLOOP.
+
+* Keep, per WIKEY, the record valid today (if any); otherwise keep one
+* row with PA0105 fields initial so it is treated as an insert.
+  SORT gt_netuser BY wikey ASCENDING is_valid DESCENDING.
+  DELETE ADJACENT DUPLICATES FROM gt_netuser COMPARING wikey.
 
   LOOP AT gt_netuser INTO gs_netuser.
 
@@ -135,7 +152,7 @@ FORM update_pa0105_subty_0010.
     CLEAR lv_pernr.
     lv_pernr = gs_netuser-wikey.
 
-    IF gs_netuser-pernr IS NOT INITIAL.
+    IF gs_netuser-is_valid = abap_true.
 
       CHECK gs_netuser-usrid_long <> gs_netuser-adid.
 
