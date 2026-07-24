@@ -201,6 +201,7 @@ ENDFORM.
 *& FORM main - orquesta el flujo completo
 *&---------------------------------------------------------------*
 FORM main.
+  PERFORM read_edi_partner_config.
   PERFORM load_excel_data.
   CHECK gt_articulos IS NOT INITIAL OR gt_log IS NOT INITIAL.
 
@@ -214,6 +215,43 @@ FORM main.
 
   PERFORM report_unmapped_fields.
   PERFORM display_log.
+ENDFORM.
+
+*&---------------------------------------------------------------*
+*& FORM read_edi_partner_config - lee de TVARVC (tabla de variantes)
+*&                                los valores de socio EDI/puerta
+*&                                usados en el registro de control
+*&                                del IDoc de entrada (ZTPINTEDIIDOC,
+*&                                ZNINTER.EDIIDOC, ZPUERTAIDOC).
+*&---------------------------------------------------------------*
+FORM read_edi_partner_config.
+  DATA: lv_tp_int_edi  TYPE tvarvc-low,
+        lv_n_inter_edi TYPE tvarvc-low,
+        lv_puerta      TYPE tvarvc-low.
+
+  SELECT SINGLE low FROM tvarvc INTO lv_tp_int_edi
+    WHERE name = gc_tvarvc_tp_int_edi AND type = 'P'.
+  SELECT SINGLE low FROM tvarvc INTO lv_n_inter_edi
+    WHERE name = gc_tvarvc_n_inter_edi AND type = 'P'.
+  SELECT SINGLE low FROM tvarvc INTO lv_puerta
+    WHERE name = gc_tvarvc_puerta AND type = 'P'.
+
+  gv_sndprt = lv_tp_int_edi.
+  gv_rcvprt = lv_tp_int_edi.
+  gv_sndprn = lv_n_inter_edi.
+  gv_rcvprn = lv_n_inter_edi.
+  gv_sndpor = lv_puerta.
+
+  IF lv_tp_int_edi IS INITIAL OR lv_n_inter_edi IS INITIAL OR lv_puerta IS INITIAL.
+    APPEND VALUE ty_log(
+      status        = gc_status-warning
+      message_type  = 'W'
+      message       = |Falta configurar una o más variantes en TVARVC | &&
+                       |({ gc_tvarvc_tp_int_edi }/{ gc_tvarvc_n_inter_edi }/{ gc_tvarvc_puerta }); | &&
+                       |el registro de control del IDoc quedará incompleto.|
+      creation_date = sy-datum
+      uname         = sy-uname ) TO gt_log.
+  ENDIF.
 ENDFORM.
 
 *&---------------------------------------------------------------*
@@ -855,11 +893,11 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
   ls_edidc-mestyp  = gc_mestyp.
   ls_edidc-idoctyp = gc_idoctyp.   " EDI_DC40 usa IDOCTYP (no IDOCTP como EDIDC)
   ls_edidc-direct  = '2'.   " Entrada: procesamiento local vía IDOC_INBOUND_SINGLE
-  ls_edidc-sndprt = gc_sndprt.
-  ls_edidc-sndprn = gc_sndprn.
-  ls_edidc-rcvprt = gc_rcvprt.
-  ls_edidc-rcvprn = gc_rcvprn.
-  ls_edidc-sndpor = gc_sndpor.
+  ls_edidc-sndprt = gv_sndprt.
+  ls_edidc-sndprn = gv_sndprn.
+  ls_edidc-rcvprt = gv_rcvprt.
+  ls_edidc-rcvprn = gv_rcvprn.
+  ls_edidc-sndpor = gv_sndpor.
 
   CLEAR: lv_docnum, lv_error_prior.
   CALL FUNCTION 'IDOC_INBOUND_SINGLE'

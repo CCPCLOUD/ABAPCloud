@@ -450,12 +450,19 @@ SELECTION-SCREEN END OF BLOCK b2.
 " tanto el remitente como el destinatario del registro de control
 " son el propio sistema (self-referencia válida para entrada, a
 " diferencia de la distribución de salida, donde SAP la bloquea).
+" Los valores se leen de TVARVC (ver FORM READ_EDI_PARTNER_CONFIG)
+" en vez de estar fijos en el programa.
 CONSTANTS:
-  gc_sndprt TYPE edidc-sndprt VALUE 'LS',
-  gc_sndprn TYPE edidc-sndprn VALUE 'QS4CLNT100',
-  gc_rcvprt TYPE edidc-rcvprt VALUE 'LS',
-  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100',
-  gc_sndpor TYPE edidc-sndpor VALUE 'SAPQS4'.
+  gc_tvarvc_tp_int_edi   TYPE tvarvc-name VALUE 'ZTPINTEDIIDOC',
+  gc_tvarvc_n_inter_edi  TYPE tvarvc-name VALUE 'ZNINTER.EDIIDOC',
+  gc_tvarvc_puerta       TYPE tvarvc-name VALUE 'ZPUERTAIDOC'.
+
+DATA:
+  gv_sndprt TYPE edidc-sndprt,
+  gv_sndprn TYPE edidc-sndprn,
+  gv_rcvprt TYPE edidc-rcvprt,
+  gv_rcvprn TYPE edidc-rcvprn,
+  gv_sndpor TYPE edidc-sndpor.
 
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X
