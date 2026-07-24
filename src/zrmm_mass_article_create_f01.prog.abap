@@ -852,9 +852,9 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
 
   " Control record EDI_DC40 (IDoc de ENTRADA)
   CLEAR ls_edidc.
-  ls_edidc-mestyp = gc_mestyp.
-  ls_edidc-idoctp = gc_idoctyp.
-  ls_edidc-direct = '2'.   " Entrada: procesamiento local vía IDOC_INBOUND_SINGLE
+  ls_edidc-mestyp  = gc_mestyp.
+  ls_edidc-idoctyp = gc_idoctyp.   " EDI_DC40 usa IDOCTYP (no IDOCTP como EDIDC)
+  ls_edidc-direct  = '2'.   " Entrada: procesamiento local vía IDOC_INBOUND_SINGLE
   ls_edidc-sndprt = gc_sndprt.
   ls_edidc-sndprn = gc_sndprn.
 
