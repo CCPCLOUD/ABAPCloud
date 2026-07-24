@@ -1321,6 +1321,12 @@ FORM fill_segments
   ENDLOOP.
 
   " ---------- E1BPE1MBEWRT (valoración) ----------
+  " Mismo patrón por bloques que MARCRT/MPOPRT/MPGDRT/MARDRT: todas
+  " las instancias de MBEWRT primero, todas las MBEWRTX al final
+  " (confirmado por error 26 con varias filas de valoración).
+  DATA: lt_mbewrt TYPE STANDARD TABLE OF ty_e1bpe1mbewrt.
+  CLEAR lt_mbewrt.
+
   LOOP AT gt_valoraciones INTO DATA(ls_val) WHERE material = iv_data_matnr.
     CLEAR ls_mbewrt.
     ls_mbewrt-material      = iv_data_matnr.
@@ -1331,10 +1337,22 @@ FORM fill_segments
     ls_mbewrt-moving_pr     = ls_val-moving_pr.
     ls_mbewrt-std_price     = ls_val-std_price.
     ls_mbewrt-price_unit    = ls_val-price_unit.
-    PERFORM append_segment USING 'E1BPE1MBEWRT' ls_mbewrt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MBEWRT' ls_mbewrt CHANGING ct_edidd.
+    APPEND ls_mbewrt TO lt_mbewrt.
+  ENDLOOP.
+  LOOP AT lt_mbewrt INTO ls_mbewrt.
+    PERFORM append_x_segment USING 'E1BPE1MBEWRT' ls_mbewrt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPE1MVKERT / E1BPE1WLK2RT (ventas / POS) ----------
+  " Mismo patrón por bloques que MARCRT/MPOPRT/MPGDRT/MARDRT/MBEWRT:
+  " todas las instancias de MVKERT primero, todas las MVKERTX al
+  " final; luego lo mismo para WLK2RT/WLK2RTX (confirmado con varias
+  " filas de venta/POS para un mismo material).
+  DATA: lt_mvkert TYPE STANDARD TABLE OF ty_e1bpe1mvkert,
+        lt_wlk2rt TYPE STANDARD TABLE OF ty_e1bpe1wlk2rt.
+  CLEAR: lt_mvkert, lt_wlk2rt.
+
   LOOP AT gt_ventas INTO DATA(ls_ven) WHERE material = iv_data_matnr.
     CLEAR ls_mvkert.
     ls_mvkert-material        = iv_data_matnr.
@@ -1357,8 +1375,14 @@ FORM fill_segments
                                            THEN ls_ven-pr_ref_mat ELSE iv_header_matnr ).
       ls_mvkert-pr_ref_mat_long = ls_mvkert-pr_ref_mat.
     ENDIF.
-    PERFORM append_segment USING 'E1BPE1MVKERT' ls_mvkert CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MVKERT' ls_mvkert CHANGING ct_edidd.
+    APPEND ls_mvkert TO lt_mvkert.
+  ENDLOOP.
+  LOOP AT lt_mvkert INTO ls_mvkert.
+    PERFORM append_x_segment USING 'E1BPE1MVKERT' ls_mvkert CHANGING ct_edidd.
+  ENDLOOP.
 
+  LOOP AT gt_ventas INTO ls_ven WHERE material = iv_data_matnr.
     CLEAR ls_wlk2rt.
     ls_wlk2rt-material      = iv_data_matnr.
     ls_wlk2rt-material_long = iv_data_matnr.
@@ -1366,7 +1390,11 @@ FORM fill_segments
     ls_wlk2rt-distr_chan    = ls_ven-distr_chan.
     ls_wlk2rt-sell_st_fr    = ls_ven-fecha_inicio.
     ls_wlk2rt-sell_st_to    = ls_ven-fecha_fin.
-    PERFORM append_segment USING 'E1BPE1WLK2RT' ls_wlk2rt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1WLK2RT' ls_wlk2rt CHANGING ct_edidd.
+    APPEND ls_wlk2rt TO lt_wlk2rt.
+  ENDLOOP.
+  LOOP AT lt_wlk2rt INTO ls_wlk2rt.
+    PERFORM append_x_segment USING 'E1BPE1WLK2RT' ls_wlk2rt CHANGING ct_edidd.
   ENDLOOP.
 
   " ---------- E1BPFSHSEASONS (temporadas) ----------
