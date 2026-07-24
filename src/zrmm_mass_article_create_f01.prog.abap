@@ -760,7 +760,7 @@ ENDFORM.
 *& FORM simulate_records - modo simulación (no genera IDoc real)
 *&---------------------------------------------------------------*
 FORM simulate_records.
-  DATA: lt_edidd_dummy  TYPE STANDARD TABLE OF edidd,
+  DATA: lt_edidd_dummy  TYPE STANDARD TABLE OF edi_dd40,
         lv_header_matnr TYPE c LENGTH 40,
         lv_data_matnr   TYPE c LENGTH 40.
 
@@ -770,7 +770,7 @@ FORM simulate_records.
     ENDIF.
 
     " La simulación arma los segmentos igual que el modo real (sin
-    " llamar a IDOC_START_INBOUND), para que MAP_TO_REAL_SEGMENT
+    " llamar a IDOC_INBOUND_SINGLE), para que MAP_TO_REAL_SEGMENT
     " valide de una vez si los nombres de segmento/campo calzan contra
     " la estructura real del sistema, sin crear IDocs de verdad.
     PERFORM get_header_and_data_matnr
@@ -830,15 +830,17 @@ ENDFORM.
 *&---------------------------------------------------------------*
 *& FORM build_and_send_idoc - construye segmentos ARTMAS09 y los
 *&                            procesa como IDoc de ENTRADA vía
-*&                            IDOC_START_INBOUND (creación local,
+*&                            IDOC_INBOUND_SINGLE (creación local,
 *&                            sin distribución ALE de salida).
 *&---------------------------------------------------------------*
 FORM build_and_send_idoc USING is_art TYPE ty_articulo.
-  DATA: lt_edidd          TYPE STANDARD TABLE OF edidd,
-        ls_edidc          TYPE edidc,
-        lt_control_records TYPE STANDARD TABLE OF edidc,
-        lv_header_matnr   TYPE c LENGTH 40,
-        lv_data_matnr     TYPE c LENGTH 40.
+  DATA: lt_edidd        TYPE STANDARD TABLE OF edi_dd40,
+        ls_edidc        TYPE edi_dc40,
+        lv_docnum       TYPE edidc-docnum,
+        lv_error_prior  TYPE edi_help-error_flag,
+        lv_status       TYPE edidc-status,
+        lv_header_matnr TYPE c LENGTH 40,
+        lv_data_matnr   TYPE c LENGTH 40.
 
   PERFORM get_header_and_data_matnr
     USING is_art
@@ -848,29 +850,27 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
     USING is_art lv_header_matnr lv_data_matnr
     CHANGING lt_edidd.
 
-  " Control record EDIDC (IDoc de ENTRADA)
+  " Control record EDI_DC40 (IDoc de ENTRADA)
   CLEAR ls_edidc.
   ls_edidc-mestyp = gc_mestyp.
   ls_edidc-idoctp = gc_idoctyp.
-  ls_edidc-direct = '2'.   " Entrada: procesamiento local vía IDOC_START_INBOUND
+  ls_edidc-direct = '2'.   " Entrada: procesamiento local vía IDOC_INBOUND_SINGLE
   ls_edidc-sndprt = gc_sndprt.
   ls_edidc-sndprn = gc_sndprn.
 
-  CLEAR lt_control_records.
-  APPEND ls_edidc TO lt_control_records.
-
-  CALL FUNCTION 'IDOC_START_INBOUND'
+  CLEAR: lv_docnum, lv_error_prior.
+  CALL FUNCTION 'IDOC_INBOUND_SINGLE'
+    EXPORTING
+      pi_idoc_control_rec_40         = ls_edidc
+      pi_do_commit                   = 'X'
+    IMPORTING
+      pe_idoc_number                 = lv_docnum
+      pe_error_prior_to_application  = lv_error_prior
     TABLES
-      t_control_records            = lt_control_records
-      t_data_records                = lt_edidd
+      pt_idoc_data_records_40        = lt_edidd
     EXCEPTIONS
-      invalid_document_number       = 1
-      error_before_call_application = 2
-      inbound_process_not_possible  = 3
-      old_wf_start_failed           = 4
-      wf_task_error                 = 5
-      serious_inbound_error         = 6
-      OTHERS                        = 7.
+      idoc_not_saved                 = 1
+      OTHERS                         = 2.
 
   IF sy-subrc <> 0.
     APPEND VALUE ty_log(
@@ -890,8 +890,12 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
     RETURN.
   ENDIF.
 
-  READ TABLE lt_control_records INTO DATA(ls_result) INDEX 1.
-  IF sy-subrc = 0.
+  " IDOC_INBOUND_SINGLE no devuelve el estatus final del IDoc (solo si
+  " hubo error ANTES de invocar la aplicación); el estatus real queda
+  " grabado en EDIDC y se relee tras el commit.
+  IF lv_docnum IS NOT INITIAL.
+    SELECT SINGLE status FROM edidc INTO lv_status WHERE docnum = lv_docnum.
+
     " GC_IDOC_ERROR_STATUS: estatus de IDoc estándar SAP que representan
     " un fallo definitivo (ver WE47/WEDI). '53' es el único estatus que
     " confirma documento de aplicación contabilizado con éxito; cualquier
@@ -900,8 +904,9 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
     " confirmarse en WE02/BD87, por lo que se marca como advertencia y
     " no como éxito.
     DATA(lv_status_log) = COND char1(
-      WHEN gc_idoc_error_status CS |,{ ls_result-status },| THEN gc_status-error
-      WHEN ls_result-status = '53' THEN gc_status-ok
+      WHEN lv_error_prior = abap_true THEN gc_status-error
+      WHEN gc_idoc_error_status CS |,{ lv_status },| THEN gc_status-error
+      WHEN lv_status = '53' THEN gc_status-ok
       ELSE gc_status-warning ).
 
     APPEND VALUE ty_log(
@@ -910,19 +915,19 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
       material      = is_art-material
       material_type = is_art-matl_type
       description   = is_art-descripcion
-      idoc_number   = ls_result-docnum
+      idoc_number   = lv_docnum
       message_type  = COND symsgty( WHEN lv_status_log = gc_status-error THEN 'E'
                                      WHEN lv_status_log = gc_status-warning THEN 'W'
                                      ELSE 'S' )
       message       = COND #(
                          WHEN lv_status_log = gc_status-warning THEN
-                           |IDoc { ls_result-docnum } generado, estatus { ls_result-status } | &&
+                           |IDoc { lv_docnum } generado, estatus { lv_status } | &&
                            |(en tránsito/pendiente). Confirme el resultado final en WE02/BD87.|
                          ELSE
-                           |IDoc { ls_result-docnum } generado. Estatus { ls_result-status }.| )
+                           |IDoc { lv_docnum } generado. Estatus { lv_status }.| )
       creation_date = sy-datum
       uname         = sy-uname
-      idoc_status   = ls_result-status ) TO gt_log.
+      idoc_status   = lv_status ) TO gt_log.
 
     IF lv_status_log = gc_status-error AND p_stop = abap_true.
       gv_stop_execution = abap_true.
@@ -1339,11 +1344,11 @@ ENDFORM.
 *&                            sin generar su segmento X asociado.
 *&---------------------------------------------------------------*
 FORM append_data_segment
-  USING    iv_segnam TYPE edidd-segnam
+  USING    iv_segnam TYPE edi_dd40-segnam
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
 
-  DATA: ls_edidd TYPE edidd.
+  DATA: ls_edidd TYPE edi_dd40.
 
   CLEAR ls_edidd.
   ls_edidd-segnam = iv_segnam.
@@ -1357,14 +1362,14 @@ ENDFORM.
 *&                         existe realmente en el tipo básico.
 *&---------------------------------------------------------------*
 FORM append_x_segment
-  USING    iv_segnam TYPE edidd-segnam
+  USING    iv_segnam TYPE edi_dd40-segnam
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
 
-  DATA: ls_edidd    TYPE edidd,
+  DATA: ls_edidd    TYPE edi_dd40,
         lr_data_x   TYPE REF TO data,
         lr_x_exists TYPE REF TO data,
-        lv_segnamx  TYPE edidd-segnam.
+        lv_segnamx  TYPE edi_dd40-segnam.
   FIELD-SYMBOLS: <ls_data_x> TYPE any.
 
   " Segmento de casilla de verificación (X) - marca los campos poblados
@@ -1403,7 +1408,7 @@ ENDFORM.
 *&                       ENTRE el RT y su X (jerarquía WE30).
 *&---------------------------------------------------------------*
 FORM append_segment
-  USING    iv_segnam TYPE edidd-segnam
+  USING    iv_segnam TYPE edi_dd40-segnam
            is_data    TYPE any
   CHANGING ct_edidd  TYPE STANDARD TABLE.
 
@@ -1426,9 +1431,9 @@ ENDFORM.
 *&                            o mezclados entre campos vecinos).
 *&---------------------------------------------------------------*
 FORM map_to_real_segment
-  USING    iv_segnam TYPE edidd-segnam
+  USING    iv_segnam TYPE edi_dd40-segnam
            is_source TYPE any
-  CHANGING cv_sdata  TYPE edidd-sdata.
+  CHANGING cv_sdata  TYPE edi_dd40-sdata.
 
   DATA: lr_real TYPE REF TO data,
         lv_msg  TYPE string.
