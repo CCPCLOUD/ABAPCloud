@@ -770,7 +770,7 @@ FORM simulate_records.
     ENDIF.
 
     " La simulación arma los segmentos igual que el modo real (sin
-    " llamar a MASTER_IDOC_DISTRIBUTE), para que MAP_TO_REAL_SEGMENT
+    " llamar a IDOC_START_INBOUND), para que MAP_TO_REAL_SEGMENT
     " valide de una vez si los nombres de segmento/campo calzan contra
     " la estructura real del sistema, sin crear IDocs de verdad.
     PERFORM get_header_and_data_matnr
@@ -828,15 +828,17 @@ FORM get_header_and_data_matnr
 ENDFORM.
 
 *&---------------------------------------------------------------*
-*& FORM build_and_send_idoc - construye segmentos ARTMAS09 y
-*&                            los envía vía MASTER_IDOC_DISTRIBUTE
+*& FORM build_and_send_idoc - construye segmentos ARTMAS09 y los
+*&                            procesa como IDoc de ENTRADA vía
+*&                            IDOC_START_INBOUND (creación local,
+*&                            sin distribución ALE de salida).
 *&---------------------------------------------------------------*
 FORM build_and_send_idoc USING is_art TYPE ty_articulo.
-  DATA: lt_edidd        TYPE STANDARD TABLE OF edidd,
-        ls_edidc        TYPE edidc,
-        lt_edidc_result TYPE STANDARD TABLE OF edidc,
-        lv_header_matnr TYPE c LENGTH 40,
-        lv_data_matnr   TYPE c LENGTH 40.
+  DATA: lt_edidd          TYPE STANDARD TABLE OF edidd,
+        ls_edidc          TYPE edidc,
+        lt_control_records TYPE STANDARD TABLE OF edidc,
+        lv_header_matnr   TYPE c LENGTH 40,
+        lv_data_matnr     TYPE c LENGTH 40.
 
   PERFORM get_header_and_data_matnr
     USING is_art
@@ -846,30 +848,29 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
     USING is_art lv_header_matnr lv_data_matnr
     CHANGING lt_edidd.
 
-  " Control record EDIDC
+  " Control record EDIDC (IDoc de ENTRADA)
   CLEAR ls_edidc.
   ls_edidc-mestyp = gc_mestyp.
   ls_edidc-idoctp = gc_idoctyp.
-  ls_edidc-direct = '1'.   " Outbound desde la Z / Inbound hacia procesamiento estándar
-  " Destinatario explícito (evita depender de que MASTER_IDOC_DISTRIBUTE
-  " lo resuelva vía modelo de distribución BD64; usa el socio EDI
-  " configurado en WE20 para el mensaje ARTMAS).
-  ls_edidc-rcvprt = gc_rcvprt.
-  ls_edidc-rcvprn = gc_rcvprn.
-  ls_edidc-rcvpor = gc_rcvpor.
+  ls_edidc-direct = '2'.   " Entrada: procesamiento local vía IDOC_START_INBOUND
+  ls_edidc-sndprt = gc_sndprt.
+  ls_edidc-sndprn = gc_sndprn.
 
-  CALL FUNCTION 'MASTER_IDOC_DISTRIBUTE'
-    EXPORTING
-      master_idoc_control            = ls_edidc
+  CLEAR lt_control_records.
+  APPEND ls_edidc TO lt_control_records.
+
+  CALL FUNCTION 'IDOC_START_INBOUND'
     TABLES
-      communication_idoc_control     = lt_edidc_result
-      master_idoc_data                = lt_edidd
+      t_control_records            = lt_control_records
+      t_data_records                = lt_edidd
     EXCEPTIONS
-      error_in_idoc_control            = 1
-      error_writing_idoc_status         = 2
-      error_in_idoc_data                = 3
-      sending_logical_system_unknown    = 4
-      OTHERS                            = 5.
+      invalid_document_number       = 1
+      error_before_call_application = 2
+      inbound_process_not_possible  = 3
+      old_wf_start_failed           = 4
+      wf_task_error                 = 5
+      serious_inbound_error         = 6
+      OTHERS                        = 7.
 
   IF sy-subrc <> 0.
     APPEND VALUE ty_log(
@@ -879,7 +880,7 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
       material_type = is_art-matl_type
       description   = is_art-descripcion
       message_type  = 'E'
-      message       = |Error al distribuir el IDoc ({ sy-subrc }): { sy-msgv1 }{ sy-msgv2 }|
+      message       = |Error al procesar el IDoc de entrada ({ sy-subrc }): { sy-msgv1 }{ sy-msgv2 }|
       creation_date = sy-datum
       uname         = sy-uname ) TO gt_log.
 
@@ -889,7 +890,7 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
     RETURN.
   ENDIF.
 
-  READ TABLE lt_edidc_result INTO DATA(ls_result) INDEX 1.
+  READ TABLE lt_control_records INTO DATA(ls_result) INDEX 1.
   IF sy-subrc = 0.
     " GC_IDOC_ERROR_STATUS: estatus de IDoc estándar SAP que representan
     " un fallo definitivo (ver WE47/WEDI). '53' es el único estatus que

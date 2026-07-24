@@ -442,12 +442,12 @@ PARAMETERS:
   p_stop TYPE xfeld AS CHECKBOX DEFAULT space.               " Detener en error (2.3)
 SELECTION-SCREEN END OF BLOCK b2.
 
-" Destinatario ALE fijo del IDoc (socio EDI configurado en WE20 para
-" el mensaje ARTMAS en este sistema).
+" IDoc de ENTRADA (procesado localmente vía IDOC_START_INBOUND): se
+" identifica el remitente (quien "envía" la carga), no el
+" destinatario, ya que el propio sistema procesa el IDoc.
 CONSTANTS:
-  gc_rcvprt TYPE edidc-rcvprt VALUE 'LS',
-  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100',
-  gc_rcvpor TYPE edidc-rcvpor VALUE 'SAPQS4'.
+  gc_sndprt TYPE edidc-sndprt VALUE 'LS',
+  gc_sndprn TYPE edidc-sndprn VALUE 'QS4CLNT100'.
 
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X
