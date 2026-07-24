@@ -230,11 +230,11 @@ FORM read_edi_partner_config.
         lv_puerta      TYPE tvarvc-low.
 
   SELECT SINGLE low FROM tvarvc INTO lv_tp_int_edi
-    WHERE name = gc_tvarvc_tp_int_edi AND type = 'P'.
+    WHERE name = gc_tvarvc_tp_int_edi AND type = 'S'.
   SELECT SINGLE low FROM tvarvc INTO lv_n_inter_edi
-    WHERE name = gc_tvarvc_n_inter_edi AND type = 'P'.
+    WHERE name = gc_tvarvc_n_inter_edi AND type = 'S'.
   SELECT SINGLE low FROM tvarvc INTO lv_puerta
-    WHERE name = gc_tvarvc_puerta AND type = 'P'.
+    WHERE name = gc_tvarvc_puerta AND type = 'S'.
 
   gv_sndprt = lv_tp_int_edi.
   gv_rcvprt = lv_tp_int_edi.
