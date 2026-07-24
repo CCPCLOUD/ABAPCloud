@@ -454,7 +454,8 @@ CONSTANTS:
   gc_sndprt TYPE edidc-sndprt VALUE 'LS',
   gc_sndprn TYPE edidc-sndprn VALUE 'QS4CLNT100',
   gc_rcvprt TYPE edidc-rcvprt VALUE 'LS',
-  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100'.
+  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100',
+  gc_sndpor TYPE edidc-sndpor VALUE 'SAPQS4'.
 
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X

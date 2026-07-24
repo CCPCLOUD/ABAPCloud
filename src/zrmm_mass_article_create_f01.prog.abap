@@ -859,6 +859,7 @@ FORM build_and_send_idoc USING is_art TYPE ty_articulo.
   ls_edidc-sndprn = gc_sndprn.
   ls_edidc-rcvprt = gc_rcvprt.
   ls_edidc-rcvprn = gc_rcvprn.
+  ls_edidc-sndpor = gc_sndpor.
 
   CLEAR: lv_docnum, lv_error_prior.
   CALL FUNCTION 'IDOC_INBOUND_SINGLE'
