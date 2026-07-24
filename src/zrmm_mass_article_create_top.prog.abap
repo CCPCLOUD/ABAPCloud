@@ -446,12 +446,15 @@ PARAMETERS:
   p_stop TYPE xfeld AS CHECKBOX DEFAULT space.               " Detener en error (2.3)
 SELECTION-SCREEN END OF BLOCK b2.
 
-" IDoc de ENTRADA (procesado localmente vía IDOC_START_INBOUND): se
-" identifica el remitente (quien "envía" la carga), no el
-" destinatario, ya que el propio sistema procesa el IDoc.
+" IDoc de ENTRADA (procesado localmente vía IDOC_INBOUND_SINGLE):
+" tanto el remitente como el destinatario del registro de control
+" son el propio sistema (self-referencia válida para entrada, a
+" diferencia de la distribución de salida, donde SAP la bloquea).
 CONSTANTS:
   gc_sndprt TYPE edidc-sndprt VALUE 'LS',
-  gc_sndprn TYPE edidc-sndprn VALUE 'QS4CLNT100'.
+  gc_sndprn TYPE edidc-sndprn VALUE 'QS4CLNT100',
+  gc_rcvprt TYPE edidc-rcvprt VALUE 'LS',
+  gc_rcvprn TYPE edidc-rcvprn VALUE 'QS4CLNT100'.
 
 *&---------------------------------------------------------------*
 *& Clase utilitaria: normalización de encabezados y helpers X
