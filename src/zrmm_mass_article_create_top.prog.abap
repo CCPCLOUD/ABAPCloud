@@ -342,8 +342,12 @@ TYPES:
   " Segmento de texto por Material + Unidad de medida (EF V3), datos
   " clave mínimos.
   BEGIN OF ty_e1bpe1mamtrt,
-    material TYPE c LENGTH 18,
-    alt_unit TYPE c LENGTH 3,
+    material    TYPE c LENGTH 18,
+    alt_unit    TYPE c LENGTH 3,
+    langu       TYPE c LENGTH 1,
+    text_id     TYPE c LENGTH 4,
+    consec_no   TYPE c LENGTH 2,
+    matl_descr  TYPE c LENGTH 40,
   END OF ty_e1bpe1mamtrt,
 
   BEGIN OF ty_e1bpe1meanrt,
