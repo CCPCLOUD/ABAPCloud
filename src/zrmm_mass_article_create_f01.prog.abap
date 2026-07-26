@@ -1303,6 +1303,11 @@ FORM fill_segments
     PERFORM append_x_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
   ENDLOOP.
 
+  " NOTA: aunque MAMTRT/MEANRT no tienen X, SAP exige el mismo
+  " principio de "por bloques" entre segmentos hermanos repetidos:
+  " todas las instancias de MAMTRT primero, luego todas las de
+  " MEANRT — no intercaladas (confirmado por error 26 en MAMTRT al
+  " intercalarlas con varias unidades de medida).
   LOOP AT gt_unidades_ean INTO ls_uni WHERE material = iv_data_matnr.
     CLEAR ls_mamtrt.
     ls_mamtrt-material   = iv_data_matnr.
@@ -1315,7 +1320,9 @@ FORM fill_segments
     " patrón que MAKTRTX/MLANRTX/MEANRTX/FSHSEASONSX): se usa
     " append_data_segment.
     PERFORM append_data_segment USING 'E1BPE1MAMTRT' ls_mamtrt CHANGING ct_edidd.
+  ENDLOOP.
 
+  LOOP AT gt_unidades_ean INTO ls_uni WHERE material = iv_data_matnr.
     IF ls_uni-ean_upc IS NOT INITIAL.
       CLEAR ls_meanrt.
       ls_meanrt-material = iv_data_matnr.
