@@ -1270,6 +1270,14 @@ FORM fill_segments
   ENDLOOP.
 
   " ---------- E1BPE1MARMRT / E1BPE1MAMTRT / E1BPE1MEANRT (unidades y EAN) ----------
+  " MARMRT sí tiene X confirmado; con varias unidades de medida aplica
+  " el mismo patrón por bloques que los demás segmentos con X
+  " repetidos: todas las instancias de MARMRT primero, todas las
+  " MARMRTX al final. MAMTRT/MEANRT no tienen X (append_data_segment),
+  " así que pueden recorrerse en un solo paso.
+  DATA: lt_marmrt TYPE STANDARD TABLE OF ty_e1bpe1marmrt.
+  CLEAR lt_marmrt.
+
   LOOP AT gt_unidades_ean INTO DATA(ls_uni) WHERE material = iv_data_matnr.
     CLEAR ls_marmrt.
     ls_marmrt-material      = iv_data_matnr.
@@ -1288,8 +1296,14 @@ FORM fill_segments
     ls_marmrt-volumeunit    = ls_uni-volumeunit.
     ls_marmrt-gross_wt      = ls_uni-gross_wt.
     ls_marmrt-unit_of_wt    = ls_uni-unit_of_wt.
-    PERFORM append_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
+    PERFORM append_data_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
+    APPEND ls_marmrt TO lt_marmrt.
+  ENDLOOP.
+  LOOP AT lt_marmrt INTO ls_marmrt.
+    PERFORM append_x_segment USING 'E1BPE1MARMRT' ls_marmrt CHANGING ct_edidd.
+  ENDLOOP.
 
+  LOOP AT gt_unidades_ean INTO ls_uni WHERE material = iv_data_matnr.
     CLEAR ls_mamtrt.
     ls_mamtrt-material   = iv_data_matnr.
     ls_mamtrt-alt_unit   = ls_uni-alt_unit.
