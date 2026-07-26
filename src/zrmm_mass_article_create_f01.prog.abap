@@ -1068,7 +1068,14 @@ FORM fill_segments
   ENDIF.
 
   " ---------- E1BPE1AUSPRT (características genérico/variante) ----------
+  " Mismo patrón por bloques que MARCRT/MPOPRT/MPGDRT/MARDRT/MBEWRT/
+  " MVKERT/WLK2RT: todas las instancias de AUSPRT primero, todas las
+  " AUSPRTX al final (confirmado por error 26 con varias
+  " características para un mismo material genérico/variante).
   IF is_art-tipo_carga <> gc_cat_simple.
+    DATA: lt_ausprt TYPE STANDARD TABLE OF ty_e1bpe1ausprt.
+    CLEAR lt_ausprt.
+
     LOOP AT gt_caracteristicas INTO DATA(ls_char) WHERE material = iv_data_matnr.
       CLEAR ls_ausprt.
       ls_ausprt-material        = iv_data_matnr.
@@ -1077,7 +1084,11 @@ FORM fill_segments
       ls_ausprt-char_value      = ls_char-char_value.
       ls_ausprt-char_value_long = ls_char-char_value.
       ls_ausprt-char_val_char   = ls_char-char_value.
-      PERFORM append_segment USING 'E1BPE1AUSPRT' ls_ausprt CHANGING ct_edidd.
+      PERFORM append_data_segment USING 'E1BPE1AUSPRT' ls_ausprt CHANGING ct_edidd.
+      APPEND ls_ausprt TO lt_ausprt.
+    ENDLOOP.
+    LOOP AT lt_ausprt INTO ls_ausprt.
+      PERFORM append_x_segment USING 'E1BPE1AUSPRT' ls_ausprt CHANGING ct_edidd.
     ENDLOOP.
   ENDIF.
 
