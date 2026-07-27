@@ -63,8 +63,9 @@ FORM update_usr02_accnt.
 
   LOOP AT gt_usr02_pa0105 INTO gs_usr02_pa0105.
 
+* PERNR without leading zeros, to compare/store like USR02-ACCNT
     CLEAR lv_accnt_new.
-    lv_accnt_new = gs_usr02_pa0105-pernr.
+    WRITE gs_usr02_pa0105-pernr TO lv_accnt_new NO-ZERO.
 
     CHECK lv_accnt_new <> gs_usr02_pa0105-accnt.
 
