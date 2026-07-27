@@ -79,7 +79,7 @@ FORM update_usr02_accnt.
     CHECK lv_accnt_cmp <> lv_accnt_cur.
 
     CLEAR: ls_logondata, ls_logondatax, lt_return.
-    ls_logondata-accnt  = lv_accnt_new.
+    ls_logondata-accnt  = lv_accnt_cmp.
     ls_logondatax-accnt = abap_true.
 
     CALL FUNCTION 'BAPI_USER_CHANGE'
