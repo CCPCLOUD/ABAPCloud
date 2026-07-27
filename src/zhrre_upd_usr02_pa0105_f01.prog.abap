@@ -48,7 +48,9 @@ FORM update_usr02_accnt.
         ls_return     TYPE bapiret2,
         ls_logondata  TYPE bapilogond,
         ls_logondatax TYPE bapilogonx,
-        lv_accnt_new  TYPE usr02-accnt.
+        lv_accnt_new  TYPE usr02-accnt,
+        lv_accnt_cmp  TYPE usr02-accnt,
+        lv_accnt_cur  TYPE usr02-accnt.
 
   REFRESH gt_usr02_pa0105.
 
@@ -67,7 +69,14 @@ FORM update_usr02_accnt.
     CLEAR lv_accnt_new.
     WRITE gs_usr02_pa0105-pernr TO lv_accnt_new NO-ZERO.
 
-    CHECK lv_accnt_new <> gs_usr02_pa0105-accnt.
+* Compare ignoring blanks: NO-ZERO left-justifies, while the existing
+* ACCNT value may be padded on either side
+    lv_accnt_cmp = lv_accnt_new.
+    CONDENSE lv_accnt_cmp NO-GAPS.
+    lv_accnt_cur = gs_usr02_pa0105-accnt.
+    CONDENSE lv_accnt_cur NO-GAPS.
+
+    CHECK lv_accnt_cmp <> lv_accnt_cur.
 
     CLEAR: ls_logondata, ls_logondatax, lt_return.
     ls_logondata-accnt  = lv_accnt_new.
