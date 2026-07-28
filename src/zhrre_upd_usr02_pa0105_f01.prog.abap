@@ -117,7 +117,6 @@ FORM update_pa0105_subty_0010.
 
   DATA: lt_return      TYPE STANDARD TABLE OF bapireturn1,
         ls_return      TYPE bapireturn1,
-        ls_key         TYPE prelp-pskey,
         ls_record      TYPE p0105,
         lv_pernr       TYPE pa0105-pernr,
         lt_netuser_cpy TYPE STANDARD TABLE OF ty_netuser.
@@ -192,7 +191,7 @@ FORM update_pa0105_subty_0010.
       ls_record-endda      = gs_pa0105_comm-endda.
       ls_record-usrid_long = gs_netuser-adid.
 
-      CLEAR: lt_return, ls_key.
+      CLEAR lt_return.
 
       CALL FUNCTION 'HR_INFOTYPE_OPERATION'
         EXPORTING
@@ -208,8 +207,6 @@ FORM update_pa0105_subty_0010.
           tclas         = 'A'
           dialog_mode   = '0'
           nocommit      = space
-        IMPORTING
-          key           = ls_key
         TABLES
           return        = lt_return.
 
@@ -229,7 +226,7 @@ FORM update_pa0105_subty_0010.
       ls_record-endda      = '99991231'.
       ls_record-usrid_long = gs_netuser-adid.
 
-      CLEAR: lt_return, ls_key.
+      CLEAR lt_return.
 
       CALL FUNCTION 'HR_INFOTYPE_OPERATION'
         EXPORTING
@@ -245,8 +242,6 @@ FORM update_pa0105_subty_0010.
           tclas         = 'A'
           dialog_mode   = '0'
           nocommit      = space
-        IMPORTING
-          key           = ls_key
         TABLES
           return        = lt_return.
 
