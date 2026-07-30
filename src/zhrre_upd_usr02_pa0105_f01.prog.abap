@@ -243,7 +243,7 @@ FORM update_pa0105_subty_0010.
           record        = ls_record
           operation     = 'MOD'
           tclas         = 'A'
-          dialog_mode   = '2'
+          dialog_mode   = '0'
           nocommit      = space
         IMPORTING
           return        = ls_return.
@@ -254,6 +254,7 @@ FORM update_pa0105_subty_0010.
 
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
+        WRITE: / 'Error MOD PERNR', lv_pernr, ls_return-message.
       ELSE.
         COMMIT WORK.
         ADD 1 TO gv_updated_2.
@@ -293,7 +294,7 @@ FORM update_pa0105_subty_0010.
           record        = ls_record
           operation     = 'INS'
           tclas         = 'A'
-          dialog_mode   = '2'
+          dialog_mode   = '0'
           nocommit      = space
         IMPORTING
           return        = ls_return.
@@ -304,6 +305,7 @@ FORM update_pa0105_subty_0010.
 
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
+        WRITE: / 'Error INS PERNR', lv_pernr, ls_return-message.
       ELSE.
         COMMIT WORK.
         ADD 1 TO gv_created_2.
