@@ -109,6 +109,7 @@ ENDFORM.
 *&      Form  UPDATE_PA0105_SUBTY_0010
 *&---------------------------------------------------------------------*
 *&  PA0105 (SUBTY = '0010', PERNR = ZSOX_NETUSER.WIKEY):
+*&  - Filters ZSOX_NETUSER to rows whose WIKEY exists as PERNR in PA0002
 *&  - USRID_LONG <- ZSOX_NETUSER.ADID (if the record already exists and
 *&    differs)
 *&  - creates the record if none exists for that PERNR/SUBTY
@@ -119,7 +120,8 @@ FORM update_pa0105_subty_0010.
         ls_return      TYPE bapireturn1,
         ls_record      TYPE p0105,
         lv_pernr       TYPE pa0105-pernr,
-        lt_netuser_cpy TYPE STANDARD TABLE OF ty_netuser.
+        lt_netuser_cpy TYPE STANDARD TABLE OF ty_netuser,
+        lt_pa0002      TYPE STANDARD TABLE OF pa0002-pernr.
 
   REFRESH: gt_netuser, gt_pa0105_comm.
 
@@ -143,7 +145,33 @@ FORM update_pa0105_subty_0010.
 
   CHECK gt_netuser IS NOT INITIAL.
 
-* Copy without duplicates for the FOR ALL ENTRIES lookup
+* Copy without duplicates to check which PERNR actually exist in PA0002
+  lt_netuser_cpy[] = gt_netuser.
+  SORT lt_netuser_cpy BY pernr.
+  DELETE ADJACENT DUPLICATES FROM lt_netuser_cpy COMPARING pernr.
+
+  SELECT pernr
+    INTO TABLE lt_pa0002
+    FROM pa0002
+    FOR ALL ENTRIES IN lt_netuser_cpy
+    WHERE pernr = lt_netuser_cpy-pernr.
+
+  SORT lt_pa0002.
+  DELETE ADJACENT DUPLICATES FROM lt_pa0002.
+
+* Keep only ZSOX_NETUSER rows whose PERNR actually exists in PA0002
+  LOOP AT gt_netuser INTO gs_netuser.
+    READ TABLE lt_pa0002 TRANSPORTING NO FIELDS
+      WITH KEY table_line = gs_netuser-pernr BINARY SEARCH.
+    IF sy-subrc <> 0.
+      DELETE gt_netuser.
+    ENDIF.
+  ENDLOOP.
+
+  CHECK gt_netuser IS NOT INITIAL.
+
+* Copy without duplicates for the PA0105 FOR ALL ENTRIES lookup
+  REFRESH lt_netuser_cpy.
   lt_netuser_cpy[] = gt_netuser.
   SORT lt_netuser_cpy BY pernr.
   DELETE ADJACENT DUPLICATES FROM lt_netuser_cpy COMPARING pernr.
@@ -262,7 +290,7 @@ ENDFORM.
 *&      Form  UPDATE_USR21_KOSTL
 *&---------------------------------------------------------------------*
 *&  USR21.KOSTL <- PA0001.KOSTL (record with the latest PA0001.AEDTM
-*&  for the PERNR), USR21.PERSNUMBER = PA0001.PERNR
+*&  for the PERNR), USR21.BNAME = USR02.BNAME, USR02.ACCNT = PA0001.PERNR
 *&---------------------------------------------------------------------*
 FORM update_usr21_kostl.
 
@@ -271,17 +299,27 @@ FORM update_usr21_kostl.
 
   REFRESH: gt_usr21, gt_pa0001_kostl.
 
-  SELECT bname persnumber kostl
+  SELECT u21~bname u21~kostl u02~accnt
     INTO TABLE gt_usr21
-    FROM usr21.
+    FROM usr21 AS u21
+    INNER JOIN usr02 AS u02
+      ON u02~bname = u21~bname.
 
   CHECK gt_usr21 IS NOT INITIAL.
 
-* Convert USR21-PERSNUMBER to PA0001-PERNR format
+* Convert USR02-ACCNT to PA0001-PERNR format (a plain MOVE performs the
+* implicit CHAR -> NUMC zero-padding); drop rows where ACCNT is not
+* numeric (e.g. blank/not yet set by UPDATE_USR02_ACCNT)
   LOOP AT gt_usr21 INTO gs_usr21.
-    gs_usr21-pernr = gs_usr21-persnumber.
-    MODIFY gt_usr21 FROM gs_usr21 TRANSPORTING pernr.
+    IF gs_usr21-accnt IS NOT INITIAL AND gs_usr21-accnt CO '0123456789 '.
+      gs_usr21-pernr = gs_usr21-accnt.
+      MODIFY gt_usr21 FROM gs_usr21 TRANSPORTING pernr.
+    ELSE.
+      DELETE gt_usr21.
+    ENDIF.
   ENDLOOP.
+
+  CHECK gt_usr21 IS NOT INITIAL.
 
 * Copy without duplicates for the FOR ALL ENTRIES lookup
   lt_usr21_cpy[] = gt_usr21.
@@ -303,8 +341,6 @@ FORM update_usr21_kostl.
   DELETE ADJACENT DUPLICATES FROM gt_pa0001_kostl COMPARING pernr.
 
   LOOP AT gt_usr21 INTO gs_usr21.
-
-    CHECK gs_usr21-pernr IS NOT INITIAL.
 
     READ TABLE gt_pa0001_kostl INTO gs_pa0001_kostl
       WITH KEY pernr = gs_usr21-pernr BINARY SEARCH.

@@ -44,10 +44,10 @@ TYPES: BEGIN OF ty_pa0105_comm,
        END OF ty_pa0105_comm.
 
 TYPES: BEGIN OF ty_usr21,
-         bname      TYPE usr21-bname,
-         persnumber TYPE usr21-persnumber,
-         kostl      TYPE usr21-kostl,
-         pernr      TYPE pa0001-pernr,
+         bname TYPE usr21-bname,
+         kostl TYPE usr21-kostl,
+         accnt TYPE usr02-accnt,
+         pernr TYPE pa0001-pernr,
        END OF ty_usr21.
 
 TYPES: BEGIN OF ty_pa0001_kostl,
