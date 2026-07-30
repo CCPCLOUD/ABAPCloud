@@ -225,6 +225,7 @@ FORM update_pa0105_subty_0010.
       ls_record-infty      = '0105'.
       ls_record-pernr      = gs_pa0105_comm-pernr.
       ls_record-subty      = '0010'.
+      ls_record-usrty      = '0010'.
       ls_record-objps      = gs_pa0105_comm-objps.
       ls_record-begda      = gs_pa0105_comm-begda.
       ls_record-endda      = gs_pa0105_comm-endda.
@@ -278,6 +279,7 @@ FORM update_pa0105_subty_0010.
       ls_record-infty      = '0105'.
       ls_record-pernr      = lv_pernr.
       ls_record-subty      = '0010'.
+      ls_record-usrty      = '0010'.
       ls_record-begda      = sy-datum.
       ls_record-endda      = '99991231'.
       ls_record-usrid_long = gs_netuser-adid.
