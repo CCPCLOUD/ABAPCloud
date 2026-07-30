@@ -222,6 +222,7 @@ FORM update_pa0105_subty_0010.
       ENDIF.
 
       CLEAR ls_record.
+      ls_record-infty      = '0105'.
       ls_record-pernr      = gs_pa0105_comm-pernr.
       ls_record-subty      = '0010'.
       ls_record-objps      = gs_pa0105_comm-objps.
@@ -274,6 +275,7 @@ FORM update_pa0105_subty_0010.
       ENDIF.
 
       CLEAR ls_record.
+      ls_record-infty      = '0105'.
       ls_record-pernr      = lv_pernr.
       ls_record-subty      = '0010'.
       ls_record-begda      = sy-datum.
