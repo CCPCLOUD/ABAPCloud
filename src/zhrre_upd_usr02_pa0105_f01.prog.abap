@@ -116,8 +116,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 FORM update_pa0105_subty_0010.
 
-  DATA: lt_return      TYPE STANDARD TABLE OF bapireturn1,
-        ls_return      TYPE bapireturn1,
+  DATA: ls_return      TYPE bapireturn1,
         ls_record      TYPE p0105,
         lv_pernr       TYPE pa0105-pernr,
         lt_netuser_cpy TYPE STANDARD TABLE OF ty_netuser,
@@ -219,7 +218,7 @@ FORM update_pa0105_subty_0010.
       ls_record-endda      = gs_pa0105_comm-endda.
       ls_record-usrid_long = gs_netuser-adid.
 
-      CLEAR lt_return.
+      CLEAR ls_return.
 
       CALL FUNCTION 'HR_INFOTYPE_OPERATION'
         EXPORTING
@@ -235,11 +234,10 @@ FORM update_pa0105_subty_0010.
           tclas         = 'A'
           dialog_mode   = '0'
           nocommit      = space
-        TABLES
-          return        = lt_return.
+        IMPORTING
+          return        = ls_return.
 
-      READ TABLE lt_return INTO ls_return WITH KEY type = 'E'.
-      IF sy-subrc = 0.
+      IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
       ELSE.
         ADD 1 TO gv_updated_2.
@@ -254,7 +252,7 @@ FORM update_pa0105_subty_0010.
       ls_record-endda      = '99991231'.
       ls_record-usrid_long = gs_netuser-adid.
 
-      CLEAR lt_return.
+      CLEAR ls_return.
 
       CALL FUNCTION 'HR_INFOTYPE_OPERATION'
         EXPORTING
@@ -270,11 +268,10 @@ FORM update_pa0105_subty_0010.
           tclas         = 'A'
           dialog_mode   = '0'
           nocommit      = space
-        TABLES
-          return        = lt_return.
+        IMPORTING
+          return        = ls_return.
 
-      READ TABLE lt_return INTO ls_return WITH KEY type = 'E'.
-      IF sy-subrc = 0.
+      IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
       ELSE.
         ADD 1 TO gv_created_2.
