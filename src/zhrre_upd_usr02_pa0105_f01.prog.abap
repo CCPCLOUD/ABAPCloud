@@ -240,6 +240,7 @@ FORM update_pa0105_subty_0010.
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
       ELSE.
+        COMMIT WORK.
         ADD 1 TO gv_updated_2.
       ENDIF.
 
@@ -274,6 +275,7 @@ FORM update_pa0105_subty_0010.
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
       ELSE.
+        COMMIT WORK.
         ADD 1 TO gv_created_2.
       ENDIF.
 
