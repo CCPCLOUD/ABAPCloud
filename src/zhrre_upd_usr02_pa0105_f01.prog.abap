@@ -330,7 +330,8 @@ ENDFORM.
 FORM update_usr21_kostl.
 
   DATA: lt_usr21_cpy TYPE STANDARD TABLE OF ty_usr21,
-        lv_kostl_new TYPE pa0001-kostl.
+        lv_kostl_new TYPE usr21-kostl,
+        lv_kostl_num TYPE i.
 
   REFRESH: gt_usr21, gt_pa0001_kostl.
 
@@ -381,8 +382,12 @@ FORM update_usr21_kostl.
       WITH KEY pernr = gs_usr21-pernr BINARY SEARCH.
     CHECK sy-subrc = 0.
 
+* Convert through a numeric type so the value is re-padded/truncated
+* to USR21-KOSTL's own length (drops PA0001-KOSTL's extra leading
+* zeros instead of comparing/storing them as literal characters)
+    lv_kostl_num = gs_pa0001_kostl-kostl.
     CLEAR lv_kostl_new.
-    lv_kostl_new = gs_pa0001_kostl-kostl.
+    lv_kostl_new = lv_kostl_num.
 
     CHECK lv_kostl_new <> gs_usr21-kostl.
 
