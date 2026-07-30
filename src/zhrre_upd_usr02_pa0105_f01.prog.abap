@@ -210,6 +210,17 @@ FORM update_pa0105_subty_0010.
 
       CHECK gs_pa0105_comm-usrid_long <> gs_netuser-adid.
 
+      CALL FUNCTION 'HR_EMPLOYEE_ENQUEUE'
+        EXPORTING
+          number         = lv_pernr
+        EXCEPTIONS
+          enqueue_failed = 1
+          OTHERS         = 2.
+      IF sy-subrc <> 0.
+        ADD 1 TO gv_errors.
+        CONTINUE.
+      ENDIF.
+
       CLEAR ls_record.
       ls_record-pernr      = gs_pa0105_comm-pernr.
       ls_record-subty      = '0010'.
@@ -237,6 +248,10 @@ FORM update_pa0105_subty_0010.
         IMPORTING
           return        = ls_return.
 
+      CALL FUNCTION 'HR_EMPLOYEE_DEQUEUE'
+        EXPORTING
+          number = lv_pernr.
+
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
       ELSE.
@@ -245,6 +260,17 @@ FORM update_pa0105_subty_0010.
       ENDIF.
 
     ELSE.
+
+      CALL FUNCTION 'HR_EMPLOYEE_ENQUEUE'
+        EXPORTING
+          number         = lv_pernr
+        EXCEPTIONS
+          enqueue_failed = 1
+          OTHERS         = 2.
+      IF sy-subrc <> 0.
+        ADD 1 TO gv_errors.
+        CONTINUE.
+      ENDIF.
 
       CLEAR ls_record.
       ls_record-pernr      = lv_pernr.
@@ -271,6 +297,10 @@ FORM update_pa0105_subty_0010.
           nocommit      = space
         IMPORTING
           return        = ls_return.
+
+      CALL FUNCTION 'HR_EMPLOYEE_DEQUEUE'
+        EXPORTING
+          number = lv_pernr.
 
       IF ls_return-type = 'E'.
         ADD 1 TO gv_errors.
