@@ -94,7 +94,7 @@ FORM validate_and_group_data.
       CONTINUE.
     ENDIF.
 
-    IF lv_matnr IN lt_dup_articulo.
+    IF line_exists( lt_dup_articulo[ table_line = lv_matnr ] ).
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_articulos ls_art-row
                             lv_matnr gc_nivel_material space 'W'
                             'Material duplicado en la hoja 01_ARTICULOS; se procesa una única vez.'.
@@ -164,7 +164,7 @@ FORM validate_and_group_data.
     ENDIF.
 
     DATA(lv_key_ctr) = |{ lv_matnr }-{ lv_centro }|.
-    IF lv_key_ctr IN lt_dup_centro.
+    IF line_exists( lt_dup_centro[ table_line = lv_key_ctr ] ).
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_centros ls_ctr-row
                             lv_matnr gc_nivel_centro lv_centro 'W'
                             'Combinación material + centro duplicada en el archivo.'.
@@ -268,7 +268,7 @@ FORM validate_and_group_data.
     ENDIF.
 
     DATA(lv_key_alm) = |{ lv_matnr }-{ lv_centro }-{ lv_lgort }|.
-    IF lv_key_alm IN lt_dup_almacen.
+    IF line_exists( lt_dup_almacen[ table_line = lv_key_alm ] ).
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_almacenes ls_alm-row
                             lv_matnr gc_nivel_almacen lv_clave 'W'
                             'Combinación material + centro + almacén duplicada en el archivo.'.
@@ -320,7 +320,7 @@ FORM validate_and_group_data.
     ENDIF.
 
     DATA(lv_key_val) = |{ lv_matnr }-{ lv_bwkey }|.
-    IF lv_key_val IN lt_dup_valorac.
+    IF line_exists( lt_dup_valorac[ table_line = lv_key_val ] ).
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_valoracion ls_val-row
                             lv_matnr gc_nivel_valoracion lv_bwkey 'W'
                             'Combinación material + área de valoración duplicada en el archivo.'.
@@ -416,7 +416,7 @@ FORM validate_and_group_data.
     ENDIF.
 
     DATA(lv_key_vta) = |{ lv_matnr }-{ lv_vkorg }-{ lv_vtweg }|.
-    IF lv_key_vta IN lt_dup_ventas.
+    IF line_exists( lt_dup_ventas[ table_line = lv_key_vta ] ).
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_ventas ls_vta-row
                             lv_matnr gc_nivel_ventas lv_clave 'W'
                             'Combinación material + organización de ventas + canal duplicada en el archivo.'.
