@@ -82,27 +82,33 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Ampliacion a almacenes: E1BPE1MARDRT (+ segmento X, PENDIENTE)
-  "
-  " NOTA: "E1BPE1MARDRT1" no existe como estructura en este sistema
-  " (error de activacion). Verificar en WE60 (doble clic sobre el
-  " segmento E1BPE1MARDRT dentro del tipo de IDoc ARTMAS09) cual es
-  " el nombre real del segmento de indicadores de cambio asociado a
-  " la extension de almacen -si existe-, y restaurar aqui el bloque
-  " analogo al de centros/valoracion/ventas con el nombre correcto.
-  " Mientras tanto solo se envia el segmento de datos E1BPE1MARDRT.
+  " Ampliacion a almacenes: E1BPE1MARDRT + E1BPE1MARDRTX (segmento X,
+  " confirmado en WE60 -> Tipo base ARTMAS09: "barra selección
+  " p.BAPIE1MARDRT")
   "-----------------------------------------------------------------
   LOOP AT iu_mat-t_almacen INTO DATA(ls_alm).
-    DATA: ls_mardrt TYPE e1bpe1mardrt.
-    CLEAR ls_mardrt.
+    DATA: ls_mardrt  TYPE e1bpe1mardrt,
+          ls_mardrtx TYPE e1bpe1mardrtx.
+    CLEAR: ls_mardrt, ls_mardrtx.
 
     ls_mardrt-material = iu_mat-material.
     ls_mardrt-plant    = ls_alm-centro.
     ls_mardrt-stge_loc = ls_alm-almacen.
 
+    CLEAR lt_keys.
+    APPEND `MATERIAL` TO lt_keys.
+    APPEND `PLANT` TO lt_keys.
+    APPEND `STGE_LOC` TO lt_keys.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mardrt ls_mardrtx.
+
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRT'.
     ls_edidd-sdata  = ls_mardrt.
+    APPEND ls_edidd TO lt_edidd.
+
+    CLEAR ls_edidd.
+    ls_edidd-segnam = 'E1BPE1MARDRTX'.
+    ls_edidd-sdata  = ls_mardrtx.
     APPEND ls_edidd TO lt_edidd.
   ENDLOOP.
 
