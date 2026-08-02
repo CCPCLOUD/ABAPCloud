@@ -110,11 +110,7 @@ FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
   FIELD-SYMBOLS: <lt_raw> TYPE STANDARD TABLE.
 
   TRY.
-      CALL METHOD iu_xlsx->if_fdt_doc_spreadsheet~get_itab_from_worksheet
-        EXPORTING
-          worksheet_name = iu_sheet
-        IMPORTING
-          itab      = lr_raw.
+      lr_raw = iu_xlsx->if_fdt_doc_spreadsheet~get_itab_from_worksheet( worksheet_name = iu_sheet ).
     CATCH cx_root INTO DATA(lx_sheet).
       lv_msg = |La hoja { iu_sheet } no existe o no pudo leerse: { lx_sheet->get_text( ) }. Verifique el layout final conciliado.|.
       PERFORM add_log USING icon_red_light 'Error' iu_sheet 0

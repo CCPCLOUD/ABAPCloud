@@ -28,7 +28,8 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
                                  iu_sim TYPE abap_bool.
 
   DATA: lt_edidd TYPE STANDARD TABLE OF edidd,
-        ls_edidd TYPE edidd.
+        ls_edidd TYPE edidd,
+        lt_keys  TYPE string_table.
 
   "-----------------------------------------------------------------
   " E1BPE1MATHEAD - identificacion del articulo que se amplia
@@ -64,8 +65,10 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     ls_marcrt-sup_source  = ls_ctr-fuente_aprov.
     ls_marcrt-round_val   = ls_ctr-valor_redondeo.
 
-    PERFORM mark_changed_fields USING VALUE string_table( ( `MATERIAL` ) ( `PLANT` ) )
-                                 CHANGING ls_marcrt ls_marcrt1.
+    CLEAR lt_keys.
+    APPEND `MATERIAL` TO lt_keys.
+    APPEND `PLANT` TO lt_keys.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_marcrt ls_marcrt1.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT'.
@@ -79,28 +82,27 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Ampliacion a almacenes: E1BPE1MARDRT + E1BPE1MARDRT1 (segmento X)
+  " Ampliacion a almacenes: E1BPE1MARDRT (+ segmento X, PENDIENTE)
+  "
+  " NOTA: "E1BPE1MARDRT1" no existe como estructura en este sistema
+  " (error de activacion). Verificar en WE60 (doble clic sobre el
+  " segmento E1BPE1MARDRT dentro del tipo de IDoc ARTMAS09) cual es
+  " el nombre real del segmento de indicadores de cambio asociado a
+  " la extension de almacen -si existe-, y restaurar aqui el bloque
+  " analogo al de centros/valoracion/ventas con el nombre correcto.
+  " Mientras tanto solo se envia el segmento de datos E1BPE1MARDRT.
   "-----------------------------------------------------------------
   LOOP AT iu_mat-t_almacen INTO DATA(ls_alm).
-    DATA: ls_mardrt  TYPE e1bpe1mardrt,
-          ls_mardrt1 TYPE e1bpe1mardrt1.
-    CLEAR: ls_mardrt, ls_mardrt1.
+    DATA: ls_mardrt TYPE e1bpe1mardrt.
+    CLEAR ls_mardrt.
 
     ls_mardrt-material = iu_mat-material.
     ls_mardrt-plant    = ls_alm-centro.
     ls_mardrt-stge_loc = ls_alm-almacen.
 
-    PERFORM mark_changed_fields USING VALUE string_table( ( `MATERIAL` ) ( `PLANT` ) ( `STGE_LOC` ) )
-                                 CHANGING ls_mardrt ls_mardrt1.
-
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRT'.
     ls_edidd-sdata  = ls_mardrt.
-    APPEND ls_edidd TO lt_edidd.
-
-    CLEAR ls_edidd.
-    ls_edidd-segnam = 'E1BPE1MARDRT1'.
-    ls_edidd-sdata  = ls_mardrt1.
     APPEND ls_edidd TO lt_edidd.
   ENDLOOP.
 
@@ -120,8 +122,10 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     ls_mbewrt-std_price  = ls_val-precio_estandar.
     ls_mbewrt-price_unit = ls_val-unidad_precio.
 
-    PERFORM mark_changed_fields USING VALUE string_table( ( `MATERIAL` ) ( `VAL_AREA` ) )
-                                 CHANGING ls_mbewrt ls_mbewrt1.
+    CLEAR lt_keys.
+    APPEND `MATERIAL` TO lt_keys.
+    APPEND `VAL_AREA` TO lt_keys.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mbewrt ls_mbewrt1.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRT'.
@@ -163,8 +167,11 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
       ls_mvkert-sell_dc_to = ls_vta-fecha_fin.
     ENDIF.
 
-    PERFORM mark_changed_fields USING VALUE string_table( ( `MATERIAL` ) ( `SALES_ORG` ) ( `DISTR_CHAN` ) )
-                                 CHANGING ls_mvkert ls_mvkert1.
+    CLEAR lt_keys.
+    APPEND `MATERIAL` TO lt_keys.
+    APPEND `SALES_ORG` TO lt_keys.
+    APPEND `DISTR_CHAN` TO lt_keys.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mvkert ls_mvkert1.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERT'.
