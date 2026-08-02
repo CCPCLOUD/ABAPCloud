@@ -145,12 +145,12 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Area de ventas: E1BPE1MVKERT + E1BPE1MVKERT1 (segmento X)
+  " Area de ventas: E1BPE1MVKERT + E1BPE1MVKERTX (segmento X)
   "-----------------------------------------------------------------
   LOOP AT iu_mat-t_ventas INTO DATA(ls_vta).
     DATA: ls_mvkert  TYPE e1bpe1mvkert,
-          ls_mvkert1 TYPE e1bpe1mvkert1.
-    CLEAR: ls_mvkert, ls_mvkert1.
+          ls_mvkertx TYPE e1bpe1mvkertx.
+    CLEAR: ls_mvkert, ls_mvkertx.
 
     ls_mvkert-material    = iu_mat-material.
     ls_mvkert-sales_org   = ls_vta-org_ventas.
@@ -177,7 +177,7 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `MATERIAL` TO lt_keys.
     APPEND `SALES_ORG` TO lt_keys.
     APPEND `DISTR_CHAN` TO lt_keys.
-    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mvkert ls_mvkert1.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mvkert ls_mvkertx.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERT'.
@@ -185,8 +185,8 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND ls_edidd TO lt_edidd.
 
     CLEAR ls_edidd.
-    ls_edidd-segnam = 'E1BPE1MVKERT1'.
-    ls_edidd-sdata  = ls_mvkert1.
+    ls_edidd-segnam = 'E1BPE1MVKERTX'.
+    ls_edidd-sdata  = ls_mvkertx.
     APPEND ls_edidd TO lt_edidd.
   ENDLOOP.
 
