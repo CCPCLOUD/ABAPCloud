@@ -76,7 +76,9 @@ FORM validate_and_group_data.
         lt_dup_almacen   TYPE SORTED TABLE OF string WITH UNIQUE KEY table_line,
         lt_dup_valorac   TYPE SORTED TABLE OF string WITH UNIQUE KEY table_line,
         lt_dup_ventas    TYPE SORTED TABLE OF string WITH UNIQUE KEY table_line,
-        lt_dup_articulo  TYPE SORTED TABLE OF matnr  WITH UNIQUE KEY table_line.
+        lt_dup_articulo  TYPE SORTED TABLE OF matnr  WITH UNIQUE KEY table_line,
+        lv_msg           TYPE string,
+        lv_clave         TYPE string.
 
   "---------------------------------------------------------------
   " 1) 01_ARTICULOS: existencia, no marcado para borrado, ATTYP
@@ -201,18 +203,18 @@ FORM validate_and_group_data.
       IF sy-subrc = 0.
         ls_ctr_ok-pais_origen = lv_land1.
       ELSE.
+        lv_msg = |Código ISO de país de origen { ls_ctr-pais_origen } no reconocido (T005); campo omitido.|.
         PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_centros ls_ctr-row
-                              lv_matnr gc_nivel_centro lv_centro 'W'
-                              |Código ISO de país de origen { ls_ctr-pais_origen } no reconocido (T005); campo omitido.|.
+                              lv_matnr gc_nivel_centro lv_centro 'W' lv_msg.
       ENDIF.
     ENDIF.
 
     IF ls_ctr-grupo_compras IS NOT INITIAL.
       SELECT SINGLE ekgrp FROM t024 INTO @DATA(lv_ekgrp_chk) WHERE ekgrp = @ls_ctr-grupo_compras.
       IF sy-subrc <> 0.
+        lv_msg = |Grupo de compras { ls_ctr-grupo_compras } no existe en T024; se envía igualmente para validación en el IDoc.|.
         PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_centros ls_ctr-row
-                              lv_matnr gc_nivel_centro lv_centro 'W'
-                              |Grupo de compras { ls_ctr-grupo_compras } no existe en T024; se envía igualmente para validación en el IDoc.|.
+                              lv_matnr gc_nivel_centro lv_centro 'W' lv_msg.
       ENDIF.
     ENDIF.
 
@@ -235,10 +237,11 @@ FORM validate_and_group_data.
 
     lv_centro = CONV werks_d( ls_alm-centro ).
     DATA(lv_lgort) = CONV lgort_d( ls_alm-almacen ).
+    lv_clave = |{ lv_centro }/{ lv_lgort }|.
 
     IF lv_centro IS INITIAL OR lv_lgort IS INITIAL.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_almacenes ls_alm-row
-                            lv_matnr gc_nivel_almacen |{ lv_centro }/{ lv_lgort }| 'E'
+                            lv_matnr gc_nivel_almacen lv_clave 'E'
                             'Centro o almacén vacío.'.
       CONTINUE.
     ENDIF.
@@ -249,7 +252,7 @@ FORM validate_and_group_data.
         WHERE matnr = @lv_matnr AND werks = @lv_centro.
       IF sy-subrc <> 0.
         PERFORM add_log USING icon_red_light 'Error' gc_sheet_almacenes ls_alm-row
-                              lv_matnr gc_nivel_almacen |{ lv_centro }/{ lv_lgort }| 'E'
+                              lv_matnr gc_nivel_almacen lv_clave 'E'
                               'El centro debe existir previamente o incluirse en la hoja 02_CENTROS del mismo archivo.'.
         CONTINUE.
       ENDIF.
@@ -259,7 +262,7 @@ FORM validate_and_group_data.
       WHERE werks = @lv_centro AND lgort = @lv_lgort.
     IF sy-subrc <> 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_almacenes ls_alm-row
-                            lv_matnr gc_nivel_almacen |{ lv_centro }/{ lv_lgort }| 'E'
+                            lv_matnr gc_nivel_almacen lv_clave 'E'
                             'El almacén no existe para el centro indicado (T001L).'.
       CONTINUE.
     ENDIF.
@@ -267,7 +270,7 @@ FORM validate_and_group_data.
     DATA(lv_key_alm) = |{ lv_matnr }-{ lv_centro }-{ lv_lgort }|.
     IF lv_key_alm IN lt_dup_almacen.
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_almacenes ls_alm-row
-                            lv_matnr gc_nivel_almacen |{ lv_centro }/{ lv_lgort }| 'W'
+                            lv_matnr gc_nivel_almacen lv_clave 'W'
                             'Combinación material + centro + almacén duplicada en el archivo.'.
       CONTINUE.
     ENDIF.
@@ -277,7 +280,7 @@ FORM validate_and_group_data.
       WHERE matnr = @lv_matnr AND werks = @lv_centro AND lgort = @lv_lgort.
     IF sy-subrc = 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_almacenes ls_alm-row
-                            lv_matnr gc_nivel_almacen |{ lv_centro }/{ lv_lgort }| 'E'
+                            lv_matnr gc_nivel_almacen lv_clave 'E'
                             'La extensión de almacén ya existe.'.
       CONTINUE.
     ENDIF.
@@ -374,20 +377,23 @@ FORM validate_and_group_data.
   LOOP AT git_ventas INTO DATA(ls_vta).
     PERFORM convert_matnr USING ls_vta-material CHANGING lv_matnr.
 
+    lv_clave = |{ ls_vta-org_ventas }/{ ls_vta-canal_distrib }|.
+
     READ TABLE git_material_ok ASSIGNING <ls_mat> WITH KEY material = lv_matnr.
     IF sy-subrc <> 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ ls_vta-org_ventas }/{ ls_vta-canal_distrib }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'El artículo no es válido o no fue informado en 01_ARTICULOS.'.
       CONTINUE.
     ENDIF.
 
     DATA(lv_vkorg) = CONV vkorg( ls_vta-org_ventas ).
     DATA(lv_vtweg) = CONV vtweg( ls_vta-canal_distrib ).
+    lv_clave = |{ lv_vkorg }/{ lv_vtweg }|.
 
     IF lv_vkorg IS INITIAL OR lv_vtweg IS INITIAL.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'Organización de ventas o canal de distribución vacío.'.
       CONTINUE.
     ENDIF.
@@ -395,7 +401,7 @@ FORM validate_and_group_data.
     SELECT SINGLE vkorg FROM tvko INTO @DATA(lv_vkorg_chk) WHERE vkorg = @lv_vkorg.
     IF sy-subrc <> 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'La organización de ventas no existe en SAP (TVKO).'.
       CONTINUE.
     ENDIF.
@@ -404,7 +410,7 @@ FORM validate_and_group_data.
       WHERE vkorg = @lv_vkorg AND vtweg = @lv_vtweg.
     IF sy-subrc <> 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'La combinación organización de ventas / canal de distribución no es válida (TVKOV).'.
       CONTINUE.
     ENDIF.
@@ -412,7 +418,7 @@ FORM validate_and_group_data.
     DATA(lv_key_vta) = |{ lv_matnr }-{ lv_vkorg }-{ lv_vtweg }|.
     IF lv_key_vta IN lt_dup_ventas.
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'W'
+                            lv_matnr gc_nivel_ventas lv_clave 'W'
                             'Combinación material + organización de ventas + canal duplicada en el archivo.'.
       CONTINUE.
     ENDIF.
@@ -422,7 +428,7 @@ FORM validate_and_group_data.
       WHERE matnr = @lv_matnr AND vkorg = @lv_vkorg AND vtweg = @lv_vtweg.
     IF sy-subrc = 0.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'La extensión al área de ventas ya existe.'.
       CONTINUE.
     ENDIF.
@@ -437,7 +443,7 @@ FORM validate_and_group_data.
           ls_vta_ok-fecha_inicio = ls_vta-fecha_inicio.
         CATCH cx_sy_conversion_no_number.
           PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_ventas ls_vta-row
-                                lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'W'
+                                lv_matnr gc_nivel_ventas lv_clave 'W'
                                 'Fecha de inicio con formato inválido (use AAAAMMDD); campo omitido.'.
       ENDTRY.
     ENDIF.
@@ -447,7 +453,7 @@ FORM validate_and_group_data.
           ls_vta_ok-fecha_fin = ls_vta-fecha_fin.
         CATCH cx_sy_conversion_no_number.
           PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_ventas ls_vta-row
-                                lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'W'
+                                lv_matnr gc_nivel_ventas lv_clave 'W'
                                 'Fecha de fin con formato inválido (use AAAAMMDD); campo omitido.'.
       ENDTRY.
     ENDIF.
@@ -455,7 +461,7 @@ FORM validate_and_group_data.
     IF ls_vta_ok-fecha_inicio IS NOT INITIAL AND ls_vta_ok-fecha_fin IS NOT INITIAL
        AND ls_vta_ok-fecha_fin < ls_vta_ok-fecha_inicio.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'E'
+                            lv_matnr gc_nivel_ventas lv_clave 'E'
                             'La fecha de fin no puede ser menor que la fecha de inicio.'.
       CONTINUE.
     ENDIF.
@@ -464,7 +470,7 @@ FORM validate_and_group_data.
       PERFORM convert_matnr USING ls_vta-material_ref_precio CHANGING ls_vta_ok-material_ref_precio.
     ELSEIF <ls_mat>-attyp = gc_attyp_variante.
       PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_ventas ls_vta-row
-                            lv_matnr gc_nivel_ventas |{ lv_vkorg }/{ lv_vtweg }| 'W'
+                            lv_matnr gc_nivel_ventas lv_clave 'W'
                             'Material de referencia de precio no informado para una variante; validar regla de negocio con Master Data antes de confirmar.'.
     ENDIF.
 

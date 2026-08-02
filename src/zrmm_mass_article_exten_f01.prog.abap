@@ -11,7 +11,8 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
                             CHANGING cv_xdata TYPE xstring.
 
   DATA: lv_length TYPE i,
-        lt_binary TYPE solix_tab.
+        lt_binary TYPE solix_tab,
+        lv_msg    TYPE string.
 
   CLEAR cv_xdata.
 
@@ -45,9 +46,9 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
       OTHERS                    = 19.
 
   IF sy-subrc <> 0.
+    lv_msg = |No fue posible leer el archivo local { pu_file }. Verifique la ruta y los permisos.|.
     PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                          space gc_nivel_material space 'E'
-                          |No fue posible leer el archivo local { pu_file }. Verifique la ruta y los permisos.|.
+                          space gc_nivel_material space 'E' lv_msg.
     RETURN.
   ENDIF.
 
@@ -65,60 +66,47 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
       OTHERS       = 2.
 
   IF sy-subrc <> 0 OR cv_xdata IS INITIAL.
+    lv_msg = 'No fue posible convertir el archivo a formato binario procesable.'.
     PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                          space gc_nivel_material space 'E'
-                          'No fue posible convertir el archivo a formato binario procesable.'.
+                          space gc_nivel_material space 'E' lv_msg.
     RETURN.
   ENDIF.
 
   " La lectura del .xlsx se realiza mediante CL_FDT_XL_SPREADSHEET
   " (verificar disponibilidad y firma exacta de metodos en el sistema
-  " destino: WE60/SE24 -> CL_FDT_XL_SPREADSHEET).
-  DATA: lo_xlsx        TYPE REF TO cl_fdt_xl_spreadsheet,
-        lt_sheet_names TYPE if_fdt_doc_spreadsheet=>t_worksheet_names.
+  " destino: WE60/SE24 -> CL_FDT_XL_SPREADSHEET). No se depende de
+  " GET_WORKSHEET_NAMES: cada hoja se intenta leer directamente y,
+  " si no existe o el archivo esta danado, se captura la excepcion.
+  DATA: lo_xlsx TYPE REF TO cl_fdt_xl_spreadsheet.
 
   TRY.
       lo_xlsx = NEW cl_fdt_xl_spreadsheet( document_name = pu_file
                                             xdocument     = cv_xdata ).
-
-      CALL METHOD lo_xlsx->if_fdt_doc_spreadsheet~get_worksheet_names
-        RECEIVING
-          p_names = lt_sheet_names.
-
-    CATCH cx_fdt_input cx_fdt_ex_input_format_1000 INTO DATA(lx_excel).
+    CATCH cx_root INTO DATA(lx_excel).
+      lv_msg = |Archivo Excel inválido o dañado: { lx_excel->get_text( ) }|.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                            space gc_nivel_material space 'E'
-                            |Archivo Excel inválido o dañado: { lx_excel->get_text( ) }|.
+                            space gc_nivel_material space 'E' lv_msg.
       RETURN.
   ENDTRY.
 
-  PERFORM parse_worksheet USING lo_xlsx gc_sheet_articulos  lt_sheet_names CHANGING git_articulos.
-  PERFORM parse_worksheet USING lo_xlsx gc_sheet_centros    lt_sheet_names CHANGING git_centros.
-  PERFORM parse_worksheet USING lo_xlsx gc_sheet_almacenes  lt_sheet_names CHANGING git_almacenes.
-  PERFORM parse_worksheet USING lo_xlsx gc_sheet_valoracion lt_sheet_names CHANGING git_valoracion.
-  PERFORM parse_worksheet USING lo_xlsx gc_sheet_ventas     lt_sheet_names CHANGING git_ventas.
+  PERFORM parse_worksheet USING lo_xlsx gc_sheet_articulos  CHANGING git_articulos.
+  PERFORM parse_worksheet USING lo_xlsx gc_sheet_centros    CHANGING git_centros.
+  PERFORM parse_worksheet USING lo_xlsx gc_sheet_almacenes  CHANGING git_almacenes.
+  PERFORM parse_worksheet USING lo_xlsx gc_sheet_valoracion CHANGING git_valoracion.
+  PERFORM parse_worksheet USING lo_xlsx gc_sheet_ventas     CHANGING git_ventas.
 
 ENDFORM.
 
 *&---------------------------------------------------------------------*
 *&      Form  PARSE_WORKSHEET
-*&  Valida que la hoja exista y delega en la forma tipada correspondiente
+*&  Lee la hoja y delega en la forma tipada correspondiente
 *&---------------------------------------------------------------------*
 FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
                            iu_sheet TYPE string
-                           it_names TYPE if_fdt_doc_spreadsheet=>t_worksheet_names
                      CHANGING ct_data TYPE any TABLE.
 
-  READ TABLE it_names TRANSPORTING NO FIELDS
-    WITH KEY table_line = iu_sheet.
-  IF sy-subrc <> 0.
-    PERFORM add_log USING icon_red_light 'Error' iu_sheet 0
-                          space gc_nivel_material space 'E'
-                          |La hoja { iu_sheet } no existe en el archivo. Verifique el layout final conciliado.|.
-    RETURN.
-  ENDIF.
-
-  DATA: lr_raw TYPE REF TO data.
+  DATA: lr_raw TYPE REF TO data,
+        lv_msg TYPE string.
   FIELD-SYMBOLS: <lt_raw> TYPE STANDARD TABLE.
 
   TRY.
@@ -127,10 +115,10 @@ FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
           worksheet = iu_sheet
         IMPORTING
           itab      = lr_raw.
-    CATCH cx_fdt_input INTO DATA(lx_sheet).
+    CATCH cx_root INTO DATA(lx_sheet).
+      lv_msg = |La hoja { iu_sheet } no existe o no pudo leerse: { lx_sheet->get_text( ) }. Verifique el layout final conciliado.|.
       PERFORM add_log USING icon_red_light 'Error' iu_sheet 0
-                            space gc_nivel_material space 'E'
-                            |No fue posible leer la hoja { iu_sheet }: { lx_sheet->get_text( ) }|.
+                            space gc_nivel_material space 'E' lv_msg.
       RETURN.
   ENDTRY.
 
@@ -142,9 +130,9 @@ FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
   DATA: lv_headers_ok TYPE abap_bool.
   PERFORM check_headers USING iu_sheet <lt_raw> CHANGING lv_headers_ok.
   IF lv_headers_ok = abap_false.
+    lv_msg = |Los encabezados de la hoja { iu_sheet } no coinciden exactamente con el layout final conciliado.|.
     PERFORM add_log USING icon_red_light 'Error' iu_sheet gc_header_row
-                          space gc_nivel_material space 'E'
-                          |Los encabezados de la hoja { iu_sheet } no coinciden exactamente con el layout final conciliado.|.
+                          space gc_nivel_material space 'E' lv_msg.
     RETURN.
   ENDIF.
 

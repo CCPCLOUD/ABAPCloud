@@ -274,8 +274,8 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
       OTHERS                       = 6.
 
   IF sy-subrc <> 0.
-    PERFORM log_material_result USING iu_mat space 'E'
-                                      |Error al generar/despachar el IDoc ARTMAS09 (MASTER_IDOC_DISTRIBUTE rc={ sy-subrc }).|.
+    DATA(lv_msg) = |Error al generar/despachar el IDoc ARTMAS09 (MASTER_IDOC_DISTRIBUTE rc={ sy-subrc }).|.
+    PERFORM log_material_result USING iu_mat space 'E' lv_msg.
     RETURN.
   ENDIF.
 
@@ -318,6 +318,7 @@ FORM log_material_result USING iu_mat     TYPE gty_s_material_ok
   ENDCASE.
 
   DATA(lv_any_line) = abap_false.
+  DATA: lv_clave TYPE string.
 
   LOOP AT iu_mat-t_centro INTO DATA(ls_ctr).
     lv_any_line = abap_true.
@@ -328,9 +329,9 @@ FORM log_material_result USING iu_mat     TYPE gty_s_material_ok
 
   LOOP AT iu_mat-t_almacen INTO DATA(ls_alm).
     lv_any_line = abap_true.
+    lv_clave = |{ ls_alm-centro }/{ ls_alm-almacen }|.
     PERFORM add_log USING lv_icon lv_est gc_sheet_almacenes ls_alm-row
-                          iu_mat-material gc_nivel_almacen
-                          |{ ls_alm-centro }/{ ls_alm-almacen }| iu_msgty
+                          iu_mat-material gc_nivel_almacen lv_clave iu_msgty
                           iu_mensaje iu_docnum.
   ENDLOOP.
 
@@ -343,9 +344,9 @@ FORM log_material_result USING iu_mat     TYPE gty_s_material_ok
 
   LOOP AT iu_mat-t_ventas INTO DATA(ls_vta).
     lv_any_line = abap_true.
+    lv_clave = |{ ls_vta-org_ventas }/{ ls_vta-canal_distrib }|.
     PERFORM add_log USING lv_icon lv_est gc_sheet_ventas ls_vta-row
-                          iu_mat-material gc_nivel_ventas
-                          |{ ls_vta-org_ventas }/{ ls_vta-canal_distrib }| iu_msgty
+                          iu_mat-material gc_nivel_ventas lv_clave iu_msgty
                           iu_mensaje iu_docnum.
   ENDLOOP.
 
