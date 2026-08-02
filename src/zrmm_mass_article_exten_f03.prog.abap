@@ -27,9 +27,10 @@ ENDFORM.
 FORM process_one_material USING iu_mat TYPE gty_s_material_ok
                                  iu_sim TYPE abap_bool.
 
-  DATA: lt_edidd TYPE STANDARD TABLE OF edidd,
-        ls_edidd TYPE edidd,
-        lt_keys  TYPE string_table.
+  DATA: lt_edidd     TYPE STANDARD TABLE OF edidd,
+        ls_edidd     TYPE edidd,
+        lt_keys      TYPE string_table,
+        lv_no_docnum TYPE edi_docnum.
 
   "-----------------------------------------------------------------
   " E1BPE1MATHEAD - identificacion del articulo que se amplia
@@ -194,7 +195,7 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   " Modo simulacion: no se genera ni procesa IDoc
   "-----------------------------------------------------------------
   IF iu_sim = abap_true.
-    PERFORM log_material_result USING iu_mat space 'S'
+    PERFORM log_material_result USING iu_mat lv_no_docnum 'S'
                                       'Registro(s) validado(s) correctamente. IDoc no procesado (modo simulación).'.
     RETURN.
   ENDIF.
@@ -251,9 +252,10 @@ ENDFORM.
 FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
                          iu_mat   TYPE gty_s_material_ok.
 
-  DATA: ls_control TYPE edidc,
-        lt_comm    TYPE STANDARD TABLE OF edidc,
-        lv_logsys  TYPE tbdls-logsys.
+  DATA: ls_control   TYPE edidc,
+        lt_comm      TYPE STANDARD TABLE OF edidc,
+        lv_logsys    TYPE tbdls-logsys,
+        lv_no_docnum TYPE edi_docnum.
 
   CALL FUNCTION 'OWN_LOGICAL_SYSTEM_GET'
     IMPORTING
@@ -288,15 +290,15 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
 
   IF sy-subrc <> 0.
     DATA(lv_msg) = |Error al generar/despachar el IDoc ARTMAS09 (MASTER_IDOC_DISTRIBUTE rc={ sy-subrc }).|.
-    PERFORM log_material_result USING iu_mat space 'E' lv_msg.
+    PERFORM log_material_result USING iu_mat lv_no_docnum 'E' lv_msg.
     RETURN.
   ENDIF.
 
   READ TABLE lt_comm INTO DATA(ls_comm) INDEX 1.
-  DATA(lv_docnum) = COND edi_docnum( WHEN sy-subrc = 0 THEN ls_comm-docnum ELSE space ).
+  DATA(lv_docnum) = COND edi_docnum( WHEN sy-subrc = 0 THEN ls_comm-docnum ELSE lv_no_docnum ).
 
   IF lv_docnum IS INITIAL.
-    PERFORM log_material_result USING iu_mat space 'W'
+    PERFORM log_material_result USING iu_mat lv_no_docnum 'W'
                                       'IDoc generado pero no fue posible determinar el número de documento; revisar WE02/WE05.'.
   ELSE.
     PERFORM log_material_result USING iu_mat lv_docnum 'S'
