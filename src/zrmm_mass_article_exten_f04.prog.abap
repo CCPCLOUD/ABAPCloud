@@ -17,7 +17,7 @@ FORM add_log USING iu_icon      TYPE icon_d
                     iu_clave    TYPE any
                     iu_msgty    TYPE any
                     iu_mensaje  TYPE any
-                    iu_idoc_no  TYPE edi_docnum DEFAULT '0000000000000000'.
+                    iu_idoc_no  TYPE edi_docnum OPTIONAL.
 
   DATA: ls_log TYPE gty_s_log.
 
