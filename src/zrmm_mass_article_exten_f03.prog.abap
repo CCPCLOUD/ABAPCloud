@@ -113,12 +113,12 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Datos de valoracion: E1BPE1MBEWRT + E1BPE1MBEWRT1 (segmento X)
+  " Datos de valoracion: E1BPE1MBEWRT + E1BPE1MBEWRTX (segmento X)
   "-----------------------------------------------------------------
   LOOP AT iu_mat-t_valoracion INTO DATA(ls_val).
     DATA: ls_mbewrt  TYPE e1bpe1mbewrt,
-          ls_mbewrt1 TYPE e1bpe1mbewrt1.
-    CLEAR: ls_mbewrt, ls_mbewrt1.
+          ls_mbewrtx TYPE e1bpe1mbewrtx.
+    CLEAR: ls_mbewrt, ls_mbewrtx.
 
     ls_mbewrt-material   = iu_mat-material.
     ls_mbewrt-val_area   = ls_val-area_valoracion.
@@ -131,7 +131,7 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     CLEAR lt_keys.
     APPEND `MATERIAL` TO lt_keys.
     APPEND `VAL_AREA` TO lt_keys.
-    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mbewrt ls_mbewrt1.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_mbewrt ls_mbewrtx.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRT'.
@@ -139,8 +139,8 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND ls_edidd TO lt_edidd.
 
     CLEAR ls_edidd.
-    ls_edidd-segnam = 'E1BPE1MBEWRT1'.
-    ls_edidd-sdata  = ls_mbewrt1.
+    ls_edidd-segnam = 'E1BPE1MBEWRTX'.
+    ls_edidd-sdata  = ls_mbewrtx.
     APPEND ls_edidd TO lt_edidd.
   ENDLOOP.
 
