@@ -28,6 +28,9 @@ CONSTANTS:
   gc_nivel_valoracion  TYPE string VALUE 'Valoración',
   gc_nivel_ventas      TYPE string VALUE 'Ventas'.
 
+CONSTANTS:
+  gc_no_docnum TYPE edi_docnum VALUE '0000000000000000'.
+
 *----------------------------------------------------------------------
 * Estructuras "en crudo" tal cual se leen del Excel (fila 8 en adelante)
 *----------------------------------------------------------------------

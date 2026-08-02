@@ -48,7 +48,7 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
   IF sy-subrc <> 0.
     lv_msg = |No fue posible leer el archivo local { pu_file }. Verifique la ruta y los permisos.|.
     PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                          space gc_nivel_material space 'E' lv_msg.
+                          space gc_nivel_material space 'E' lv_msg gc_no_docnum.
     RETURN.
   ENDIF.
 
@@ -68,7 +68,7 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
   IF sy-subrc <> 0 OR cv_xdata IS INITIAL.
     lv_msg = 'No fue posible convertir el archivo a formato binario procesable.'.
     PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                          space gc_nivel_material space 'E' lv_msg.
+                          space gc_nivel_material space 'E' lv_msg gc_no_docnum.
     RETURN.
   ENDIF.
 
@@ -85,7 +85,7 @@ FORM upload_and_parse_excel USING pu_file  TYPE string
     CATCH cx_root INTO DATA(lx_excel).
       lv_msg = |Archivo Excel inválido o dañado: { lx_excel->get_text( ) }|.
       PERFORM add_log USING icon_red_light 'Error' gc_sheet_articulos 0
-                            space gc_nivel_material space 'E' lv_msg.
+                            space gc_nivel_material space 'E' lv_msg gc_no_docnum.
       RETURN.
   ENDTRY.
 
@@ -114,7 +114,7 @@ FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
     CATCH cx_root INTO DATA(lx_sheet).
       lv_msg = |La hoja { iu_sheet } no existe o no pudo leerse: { lx_sheet->get_text( ) }. Verifique el layout final conciliado.|.
       PERFORM add_log USING icon_red_light 'Error' iu_sheet 0
-                            space gc_nivel_material space 'E' lv_msg.
+                            space gc_nivel_material space 'E' lv_msg gc_no_docnum.
       RETURN.
   ENDTRY.
 
@@ -128,7 +128,7 @@ FORM parse_worksheet USING iu_xlsx  TYPE REF TO cl_fdt_xl_spreadsheet
   IF lv_headers_ok = abap_false.
     lv_msg = |Los encabezados de la hoja { iu_sheet } no coinciden exactamente con el layout final conciliado.|.
     PERFORM add_log USING icon_red_light 'Error' iu_sheet gc_header_row
-                          space gc_nivel_material space 'E' lv_msg.
+                          space gc_nivel_material space 'E' lv_msg gc_no_docnum.
     RETURN.
   ENDIF.
 
