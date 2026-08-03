@@ -17,9 +17,9 @@ CONSTANTS:
   gc_header_row       TYPE i      VALUE 7.
 
 CONSTANTS:
-  gc_attyp_simple    TYPE mara-attyp VALUE '0',
-  gc_attyp_generico  TYPE mara-attyp VALUE '1',
-  gc_attyp_variante  TYPE mara-attyp VALUE '2'.
+  gc_attyp_simple    TYPE mara-attyp VALUE '00',
+  gc_attyp_generico  TYPE mara-attyp VALUE '01',
+  gc_attyp_variante  TYPE mara-attyp VALUE '02'.
 
 CONSTANTS:
   gc_nivel_material   TYPE string VALUE 'Material',
