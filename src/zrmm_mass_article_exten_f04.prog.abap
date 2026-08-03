@@ -49,11 +49,20 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *&      Form  DISPLAY_LOG
 *&  Muestra el log en un grid ALV (columnas segun FS 2.4.5)
+*&
+*&  Se usa CL_SALV_TABLE en lugar de REUSE_ALV_GRID_DISPLAY porque este
+*&  ultimo requiere una estructura registrada en el Diccionario ABAP
+*&  (SE11) para construir el catalogo de campos; GTY_S_LOG es un tipo
+*&  local del programa, no una estructura DDIC, y CL_SALV_TABLE si
+*&  puede construir el catalogo en tiempo de ejecucion a partir de la
+*&  tabla interna.
 *&---------------------------------------------------------------------*
 FORM display_log.
 
-  DATA: lt_fcat TYPE slis_t_fieldcat_alv,
-        ls_lout TYPE slis_layout_alv.
+  DATA: lo_salv    TYPE REF TO cl_salv_table,
+        lo_columns TYPE REF TO cl_salv_columns_table,
+        lo_column  TYPE REF TO cl_salv_column,
+        lv_titulo  TYPE string.
 
   IF git_log IS INITIAL.
     APPEND VALUE gty_s_log( icon = icon_information estatus = 'Información' msgty = 'S'
@@ -61,82 +70,83 @@ FORM display_log.
       TO git_log.
   ENDIF.
 
-  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
-    EXPORTING
-      i_structure_name = 'GTY_S_LOG'
-    CHANGING
-      ct_fieldcat      = lt_fcat
-    EXCEPTIONS
-      OTHERS           = 1.
+  TRY.
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_salv
+        CHANGING
+          t_table      = git_log ).
+    CATCH cx_salv_msg INTO DATA(lx_salv).
+      WRITE: / lx_salv->get_text( ).
+      RETURN.
+  ENDTRY.
 
-  LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<ls_fcat>).
-    CASE <ls_fcat>-fieldname.
-      WHEN 'ICON'.
-        <ls_fcat>-seltext_l   = 'Estatus'.
-        <ls_fcat>-icon        = abap_true.
-        <ls_fcat>-outputlen   = 6.
-      WHEN 'ESTATUS'.
-        <ls_fcat>-seltext_l   = 'Descripción'.
-      WHEN 'HOJA'.
-        <ls_fcat>-seltext_l   = 'Hoja'.
-      WHEN 'LINEA'.
-        <ls_fcat>-seltext_l   = 'Línea'.
-      WHEN 'MATERIAL'.
-        <ls_fcat>-seltext_l   = 'Material'.
-      WHEN 'NIVEL'.
-        <ls_fcat>-seltext_l   = 'Nivel'.
-      WHEN 'CLAVE_ORG'.
-        <ls_fcat>-seltext_l   = 'Clave organizativa'.
-      WHEN 'IDOC_NO'.
-        <ls_fcat>-seltext_l   = 'IDoc No.'.
-      WHEN 'MSGTY'.
-        <ls_fcat>-seltext_l   = 'MsgT'.
-      WHEN 'MENSAJE'.
-        <ls_fcat>-seltext_l   = 'Mensaje'.
-        <ls_fcat>-outputlen   = 80.
-    ENDCASE.
-  ENDLOOP.
+  lo_salv->get_functions( )->set_all( abap_true ).
 
-  ls_lout-zebra            = abap_true.
-  ls_lout-colwidth_optimize = abap_true.
+  lo_columns = lo_salv->get_columns( ).
+  lo_columns->set_optimize( abap_true ).
 
-  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
-    EXPORTING
-      i_callback_program = sy-repid
-      i_callback_top_of_page = 'TOP_OF_PAGE_LOG'
-      is_layout           = ls_lout
-      it_fieldcat          = lt_fcat
-      i_save               = 'A'
-    TABLES
-      t_outtab             = git_log
-    EXCEPTIONS
-      OTHERS               = 1.
+  TRY.
+      lo_column = lo_columns->get_column( 'ICON' ).
+      lo_column->set_short_text( 'Estatus' ).
+      lo_column->set_medium_text( 'Estatus' ).
+      lo_column->set_long_text( 'Estatus' ).
+      CAST cl_salv_column_table( lo_column )->set_icon( if_salv_c_bool_sap=>true ).
 
-ENDFORM.
+      lo_column = lo_columns->get_column( 'ESTATUS' ).
+      lo_column->set_short_text( 'Estado' ).
+      lo_column->set_medium_text( 'Estado' ).
+      lo_column->set_long_text( 'Descripción' ).
 
-*&---------------------------------------------------------------------*
-*&      Form  TOP_OF_PAGE_LOG
-*&  Totales del procesamiento (FS 2.4.5 - fila "Totales")
-*&---------------------------------------------------------------------*
-FORM top_of_page_log.
+      lo_column = lo_columns->get_column( 'HOJA' ).
+      lo_column->set_short_text( 'Hoja' ).
+      lo_column->set_medium_text( 'Hoja' ).
+      lo_column->set_long_text( 'Hoja' ).
 
-  DATA: lt_line TYPE slis_t_listheader,
-        ls_line TYPE slis_listheader.
+      lo_column = lo_columns->get_column( 'LINEA' ).
+      lo_column->set_short_text( 'Línea' ).
+      lo_column->set_medium_text( 'Línea' ).
+      lo_column->set_long_text( 'Línea' ).
 
-  ls_line-typ  = 'H'.
-  ls_line-info = 'ZMM_ARTICLE_EXTEND - Log de Ampliación Masiva de Artículos'.
-  APPEND ls_line TO lt_line.
+      lo_column = lo_columns->get_column( 'MATERIAL' ).
+      lo_column->set_short_text( 'Material' ).
+      lo_column->set_medium_text( 'Material' ).
+      lo_column->set_long_text( 'Material' ).
 
-  ls_line-typ  = 'S'.
-  ls_line-key  = 'Totales:'.
-  ls_line-info = |Procesados { gv_count_total }  |
-              && |Éxitos { gv_count_ok }  |
-              && |Errores { gv_count_error }  |
-              && |Advertencias { gv_count_warn }|.
-  APPEND ls_line TO lt_line.
+      lo_column = lo_columns->get_column( 'NIVEL' ).
+      lo_column->set_short_text( 'Nivel' ).
+      lo_column->set_medium_text( 'Nivel' ).
+      lo_column->set_long_text( 'Nivel' ).
 
-  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
-    EXPORTING
-      it_list_commentary = lt_line.
+      lo_column = lo_columns->get_column( 'CLAVE_ORG' ).
+      lo_column->set_short_text( 'Clave org' ).
+      lo_column->set_medium_text( 'Clave organizativa' ).
+      lo_column->set_long_text( 'Clave organizativa' ).
+
+      lo_column = lo_columns->get_column( 'IDOC_NO' ).
+      lo_column->set_short_text( 'IDoc No.' ).
+      lo_column->set_medium_text( 'IDoc No.' ).
+      lo_column->set_long_text( 'IDoc No.' ).
+
+      lo_column = lo_columns->get_column( 'MSGTY' ).
+      lo_column->set_short_text( 'MsgT' ).
+      lo_column->set_medium_text( 'MsgT' ).
+      lo_column->set_long_text( 'MsgT' ).
+
+      lo_column = lo_columns->get_column( 'MENSAJE' ).
+      lo_column->set_short_text( 'Mensaje' ).
+      lo_column->set_medium_text( 'Mensaje' ).
+      lo_column->set_long_text( 'Mensaje' ).
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+  lv_titulo = |ZMM_ARTICLE_EXTEND - Log de Ampliación Masiva de Artículos  -  |
+           && |Procesados { gv_count_total }  |
+           && |Éxitos { gv_count_ok }  |
+           && |Errores { gv_count_error }  |
+           && |Advertencias { gv_count_warn }|.
+  lo_salv->get_display_settings( )->set_list_header( lv_titulo ).
+
+  lo_salv->display( ).
 
 ENDFORM.
