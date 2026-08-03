@@ -145,7 +145,7 @@ FORM display_log.
            && |Éxitos { gv_count_ok }  |
            && |Errores { gv_count_error }  |
            && |Advertencias { gv_count_warn }|.
-  lo_salv->get_display_settings( )->set_list_header( lv_titulo ).
+  lo_salv->get_display_settings( )->set_list_header( CONV lvc_title( lv_titulo ) ).
 
   lo_salv->display( ).
 
