@@ -27,8 +27,8 @@ ENDFORM.
 FORM process_one_material USING iu_mat TYPE gty_s_material_ok
                                  iu_sim TYPE abap_bool.
 
-  DATA: lt_edidd     TYPE STANDARD TABLE OF edidd,
-        ls_edidd     TYPE edidd,
+  DATA: lt_edidd     TYPE STANDARD TABLE OF edi_dd40,
+        ls_edidd     TYPE edi_dd40,
         lt_keys      TYPE string_table,
         lv_no_docnum TYPE edi_docnum.
 
@@ -286,21 +286,25 @@ ENDFORM.
 
 *&---------------------------------------------------------------------*
 *&      Form  DISPATCH_IDOC
-*&  Genera el IDoc ARTMAS09 de ENTRADA (EDIDC-DIRECT = '2') mediante
+*&  Genera el IDoc ARTMAS09 de ENTRADA (EDI_DC40-DIRECT = '2') mediante
 *&  IDOC_INBOUND_SINGLE y actualiza el log con el numero de IDoc
 *&  generado o el error de despacho.
 *&
-*&  IMPORTANTE: la firma exacta (nombres de parametros IMPORTING/
-*&  TABLES/EXCEPTIONS) de IDOC_INBOUND_SINGLE debe verificarse en SE37
-*&  en el sistema destino antes de activar - se deja aqui la firma
-*&  estandar mas comun, pero puede variar segun el release.
+*&  Firma verificada en SE37 (sistema destino):
+*&    IMPORT   PI_IDOC_CONTROL_REC_40 LIKE EDI_DC40
+*&             PI_DO_COMMIT           LIKE EDI_HELP-DO_COMMIT OPTIONAL (default 'X')
+*&    EXPORT   PE_IDOC_NUMBER               LIKE EDIDC-DOCNUM
+*&             PE_ERROR_PRIOR_TO_APPLICATION LIKE EDI_HELP-ERROR_FLAG
+*&    TABLES   PT_IDOC_DATA_RECORDS_40 LIKE EDI_DD40
 *&---------------------------------------------------------------------*
 FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
                          iu_mat   TYPE gty_s_material_ok.
 
-  DATA: ls_control   TYPE edidc,
-        lv_logsys    TYPE tbdls-logsys,
-        lv_no_docnum TYPE edi_docnum.
+  DATA: ls_control    TYPE edi_dc40,
+        lv_logsys     TYPE tbdls-logsys,
+        lv_no_docnum  TYPE edi_docnum,
+        lv_pe_docnum  TYPE edidc-docnum,
+        lv_error_flag TYPE edi_help-error_flag.
 
   CALL FUNCTION 'OWN_LOGICAL_SYSTEM_GET'
     IMPORTING
@@ -322,12 +326,15 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
 
   CALL FUNCTION 'IDOC_INBOUND_SINGLE'
     EXPORTING
-      pi_idoc_control_record = ls_control
+      pi_idoc_control_rec_40        = ls_control
+      pi_do_commit                   = 'X'
+    IMPORTING
+      pe_idoc_number                 = lv_pe_docnum
+      pe_error_prior_to_application  = lv_error_flag
     TABLES
-      pt_data_records         = it_edidd
+      pt_idoc_data_records_40        = it_edidd
     EXCEPTIONS
-      idoc_not_saved           = 1
-      OTHERS                   = 2.
+      OTHERS                         = 1.
 
   IF sy-subrc <> 0.
     DATA(lv_msg) = |Error al generar/procesar el IDoc ARTMAS09 de entrada (IDOC_INBOUND_SINGLE rc={ sy-subrc }).|.
@@ -335,11 +342,14 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
     RETURN.
   ENDIF.
 
-  DATA(lv_docnum) = ls_control-docnum.
+  DATA(lv_docnum) = CONV edi_docnum( lv_pe_docnum ).
 
   IF lv_docnum IS INITIAL.
-    PERFORM log_material_result USING iu_mat lv_no_docnum 'W'
-                                      'IDoc generado pero no fue posible determinar el número de documento; revisar WE02/WE05.'.
+    PERFORM log_material_result USING iu_mat lv_no_docnum 'E'
+                                      'No fue posible generar el IDoc; revisar WE02/WE05.'.
+  ELSEIF lv_error_flag = abap_true.
+    PERFORM log_material_result USING iu_mat lv_docnum 'W'
+                                      'IDoc de entrada generado, pero con error antes de llegar a la aplicación; revisar WE02/WE05.'.
   ELSE.
     PERFORM log_material_result USING iu_mat lv_docnum 'S'
                                       'Artículo ampliado correctamente. IDoc de entrada procesado (ver WE05/WE02).'.
