@@ -38,7 +38,7 @@ CONSTANTS:
 CONSTANTS:
   gc_tvarvc_tp_int_edi  TYPE tvarvc-name VALUE 'ZTPINTEDIIDOC',
   gc_tvarvc_n_inter_edi TYPE tvarvc-name VALUE 'ZNINTER.EDIIDOC',
-  gc_tvarvc_puerta      TYPE tvarvc-name VALUE 'ZPUERTAIDDOC'.
+  gc_tvarvc_puerta      TYPE tvarvc-name VALUE 'ZPUERTAIDOC'.
 
 DATA:
   gv_sndprt TYPE edi_dc40-sndprt,
