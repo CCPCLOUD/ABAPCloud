@@ -389,8 +389,6 @@ FORM update_usr21_kostl.
     CLEAR lv_kostl_new.
     lv_kostl_new = lv_kostl_num.
 
-    CHECK lv_kostl_new <> gs_usr21-kostl.
-
     UPDATE usr21 SET kostl = lv_kostl_new
       WHERE bname = gs_usr21-bname.
 
