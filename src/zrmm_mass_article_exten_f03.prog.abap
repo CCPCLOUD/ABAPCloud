@@ -44,8 +44,14 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   APPEND ls_edidd TO lt_edidd.
 
   "-----------------------------------------------------------------
-  " Ampliacion a centros: E1BPE1MARCRT + E1BPE1MARCRT1 (segmento X)
+  " Ampliacion a centros: primero TODOS los E1BPE1MARCRT, despues
+  " TODOS los E1BPE1MARCRT1 (segmento X) - no intercalados, segun
+  " secuencia de segmentos verificada por el equipo funcional/tecnico
+  " para el tipo base ARTMAS09.
   "-----------------------------------------------------------------
+  DATA: lt_marcrt  TYPE STANDARD TABLE OF e1bpe1marcrt,
+        lt_marcrt1 TYPE STANDARD TABLE OF e1bpe1marcrt1.
+
   LOOP AT iu_mat-t_centro INTO DATA(ls_ctr).
     DATA: ls_marcrt  TYPE e1bpe1marcrt,
           ls_marcrt1 TYPE e1bpe1marcrt1.
@@ -71,11 +77,17 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `PLANT` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_marcrt ls_marcrt1.
 
+    APPEND ls_marcrt TO lt_marcrt.
+    APPEND ls_marcrt1 TO lt_marcrt1.
+  ENDLOOP.
+
+  LOOP AT lt_marcrt INTO ls_marcrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT'.
     ls_edidd-sdata  = ls_marcrt.
     APPEND ls_edidd TO lt_edidd.
-
+  ENDLOOP.
+  LOOP AT lt_marcrt1 INTO ls_marcrt1.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT1'.
     ls_edidd-sdata  = ls_marcrt1.
@@ -83,10 +95,12 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Ampliacion a almacenes: E1BPE1MARDRT + E1BPE1MARDRTX (segmento X,
-  " confirmado en WE60 -> Tipo base ARTMAS09: "barra selección
-  " p.BAPIE1MARDRT")
+  " Ampliacion a almacenes: primero TODOS los E1BPE1MARDRT, despues
+  " TODOS los E1BPE1MARDRTX (segmento X, confirmado en WE60).
   "-----------------------------------------------------------------
+  DATA: lt_mardrt  TYPE STANDARD TABLE OF e1bpe1mardrt,
+        lt_mardrtx TYPE STANDARD TABLE OF e1bpe1mardrtx.
+
   LOOP AT iu_mat-t_almacen INTO DATA(ls_alm).
     DATA: ls_mardrt  TYPE e1bpe1mardrt,
           ls_mardrtx TYPE e1bpe1mardrtx.
@@ -102,11 +116,17 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `STGE_LOC` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mardrt ls_mardrtx.
 
+    APPEND ls_mardrt TO lt_mardrt.
+    APPEND ls_mardrtx TO lt_mardrtx.
+  ENDLOOP.
+
+  LOOP AT lt_mardrt INTO ls_mardrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRT'.
     ls_edidd-sdata  = ls_mardrt.
     APPEND ls_edidd TO lt_edidd.
-
+  ENDLOOP.
+  LOOP AT lt_mardrtx INTO ls_mardrtx.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRTX'.
     ls_edidd-sdata  = ls_mardrtx.
@@ -114,8 +134,12 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Datos de valoracion: E1BPE1MBEWRT + E1BPE1MBEWRTX (segmento X)
+  " Datos de valoracion: primero TODOS los E1BPE1MBEWRT, despues
+  " TODOS los E1BPE1MBEWRTX (segmento X).
   "-----------------------------------------------------------------
+  DATA: lt_mbewrt  TYPE STANDARD TABLE OF e1bpe1mbewrt,
+        lt_mbewrtx TYPE STANDARD TABLE OF e1bpe1mbewrtx.
+
   LOOP AT iu_mat-t_valoracion INTO DATA(ls_val).
     DATA: ls_mbewrt  TYPE e1bpe1mbewrt,
           ls_mbewrtx TYPE e1bpe1mbewrtx.
@@ -134,11 +158,17 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `VAL_AREA` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mbewrt ls_mbewrtx.
 
+    APPEND ls_mbewrt TO lt_mbewrt.
+    APPEND ls_mbewrtx TO lt_mbewrtx.
+  ENDLOOP.
+
+  LOOP AT lt_mbewrt INTO ls_mbewrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRT'.
     ls_edidd-sdata  = ls_mbewrt.
     APPEND ls_edidd TO lt_edidd.
-
+  ENDLOOP.
+  LOOP AT lt_mbewrtx INTO ls_mbewrtx.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRTX'.
     ls_edidd-sdata  = ls_mbewrtx.
@@ -146,8 +176,12 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Area de ventas: E1BPE1MVKERT + E1BPE1MVKERTX (segmento X)
+  " Area de ventas: primero TODOS los E1BPE1MVKERT, despues TODOS
+  " los E1BPE1MVKERTX (segmento X).
   "-----------------------------------------------------------------
+  DATA: lt_mvkert  TYPE STANDARD TABLE OF e1bpe1mvkert,
+        lt_mvkertx TYPE STANDARD TABLE OF e1bpe1mvkertx.
+
   LOOP AT iu_mat-t_ventas INTO DATA(ls_vta).
     DATA: ls_mvkert  TYPE e1bpe1mvkert,
           ls_mvkertx TYPE e1bpe1mvkertx.
@@ -180,11 +214,17 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `DISTR_CHAN` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mvkert ls_mvkertx.
 
+    APPEND ls_mvkert TO lt_mvkert.
+    APPEND ls_mvkertx TO lt_mvkertx.
+  ENDLOOP.
+
+  LOOP AT lt_mvkert INTO ls_mvkert.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERT'.
     ls_edidd-sdata  = ls_mvkert.
     APPEND ls_edidd TO lt_edidd.
-
+  ENDLOOP.
+  LOOP AT lt_mvkertx INTO ls_mvkertx.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERTX'.
     ls_edidd-sdata  = ls_mvkertx.
@@ -246,14 +286,19 @@ ENDFORM.
 
 *&---------------------------------------------------------------------*
 *&      Form  DISPATCH_IDOC
-*&  Genera el IDoc ARTMAS09 mediante MASTER_IDOC_DISTRIBUTE y actualiza
-*&  el log con el numero de IDoc generado o el error de despacho
+*&  Genera el IDoc ARTMAS09 de ENTRADA (EDIDC-DIRECT = '2') mediante
+*&  IDOC_INBOUND_SINGLE y actualiza el log con el numero de IDoc
+*&  generado o el error de despacho.
+*&
+*&  IMPORTANTE: la firma exacta (nombres de parametros IMPORTING/
+*&  TABLES/EXCEPTIONS) de IDOC_INBOUND_SINGLE debe verificarse en SE37
+*&  en el sistema destino antes de activar - se deja aqui la firma
+*&  estandar mas comun, pero puede variar segun el release.
 *&---------------------------------------------------------------------*
 FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
                          iu_mat   TYPE gty_s_material_ok.
 
   DATA: ls_control   TYPE edidc,
-        lt_comm      TYPE STANDARD TABLE OF edidc,
         lv_logsys    TYPE tbdls-logsys,
         lv_no_docnum TYPE edi_docnum.
 
@@ -269,40 +314,35 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
   " defecto se autogenera y procesa contra el propio sistema logico.
   ls_control-mestyp = 'ARTMAS'.
   ls_control-idoctp = 'ARTMAS09'.
+  ls_control-direct = '2'.               " '2' = IDoc de ENTRADA (inbound)
   ls_control-sndprt = 'LS'.
   ls_control-sndprn = lv_logsys.
   ls_control-rcvprt = 'LS'.
   ls_control-rcvprn = lv_logsys.
 
-  CALL FUNCTION 'MASTER_IDOC_DISTRIBUTE'
+  CALL FUNCTION 'IDOC_INBOUND_SINGLE'
     EXPORTING
-      master_idoc_control       = ls_control
+      pi_idoc_control_record = ls_control
     TABLES
-      communication_idoc_control = lt_comm
-      master_idoc_data            = it_edidd
+      pt_data_records         = it_edidd
     EXCEPTIONS
-      error_in_idoc_control       = 1
-      error_writing_idoc_status   = 2
-      error_in_idoc_data          = 3
-      sending_logical_system_unknown = 4
-      idoctyp_undefined            = 5
-      OTHERS                       = 6.
+      idoc_not_saved           = 1
+      OTHERS                   = 2.
 
   IF sy-subrc <> 0.
-    DATA(lv_msg) = |Error al generar/despachar el IDoc ARTMAS09 (MASTER_IDOC_DISTRIBUTE rc={ sy-subrc }).|.
+    DATA(lv_msg) = |Error al generar/procesar el IDoc ARTMAS09 de entrada (IDOC_INBOUND_SINGLE rc={ sy-subrc }).|.
     PERFORM log_material_result USING iu_mat lv_no_docnum 'E' lv_msg.
     RETURN.
   ENDIF.
 
-  READ TABLE lt_comm INTO DATA(ls_comm) INDEX 1.
-  DATA(lv_docnum) = COND edi_docnum( WHEN sy-subrc = 0 THEN ls_comm-docnum ELSE lv_no_docnum ).
+  DATA(lv_docnum) = ls_control-docnum.
 
   IF lv_docnum IS INITIAL.
     PERFORM log_material_result USING iu_mat lv_no_docnum 'W'
                                       'IDoc generado pero no fue posible determinar el número de documento; revisar WE02/WE05.'.
   ELSE.
     PERFORM log_material_result USING iu_mat lv_docnum 'S'
-                                      'Artículo ampliado correctamente. IDoc pendiente/procesado según configuración inbound de ARTMAS.'.
+                                      'Artículo ampliado correctamente. IDoc de entrada procesado (ver WE05/WE02).'.
   ENDIF.
 
 ENDFORM.
