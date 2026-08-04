@@ -345,7 +345,7 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
   " Interlocutor emisor/receptor y puerta: configurados via TVARVC
   " (ver READ_EDI_PARTNER_CONFIG), tal como en desarrollos previos.
   ls_control-mestyp = 'ARTMAS'.
-  ls_control-idoctp = 'ARTMAS09'.
+  ls_control-idoctyp = 'ARTMAS09'.
   ls_control-direct = '2'.               " '2' = IDoc de ENTRADA (inbound)
   ls_control-sndprt = gv_sndprt.
   ls_control-sndprn = gv_sndprn.
@@ -371,7 +371,7 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
     RETURN.
   ENDIF.
 
-  DATA(lv_docnum) = CONV edi_docnum( lv_pe_docnum ).
+  DATA(lv_docnum) = lv_pe_docnum.
 
   IF lv_docnum IS INITIAL.
     PERFORM log_material_result USING iu_mat lv_no_docnum 'E'
