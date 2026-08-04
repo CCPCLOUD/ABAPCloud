@@ -81,17 +81,19 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   APPEND ls_edidd TO lt_edidd.
 
   "-----------------------------------------------------------------
-  " Ampliacion a centros: E1BPE1MARCRT seguido inmediatamente de su
-  " propio E1BPE1MARCRT1 (segmento X). E1BPE1MARCRT1 es hijo directo
-  " de E1BPE1MARCRT con cardinalidad maxima 1 por ocurrencia del
-  " padre, por lo que no pueden agruparse por separado (confirmado
-  " por error E0075 "demasiadas repeticiones de un segmento" al
-  " intentarlo).
+  " Ampliacion a centros: por cada centro, E1BPE1MARCRT seguido
+  " inmediatamente de su hijo E1BPE1MARCRT1; y despues, en bloque
+  " aparte (al final de todos los pares), TODOS los E1BPE1MARCRTX
+  " (segmento de indicadores real) - secuencia confirmada contra un
+  " IDoc ARTMAS09 real generado por otra interfaz ya existente.
   "-----------------------------------------------------------------
+  DATA: lt_marcrtx TYPE STANDARD TABLE OF e1bpe1marcrtx.
+
   LOOP AT iu_mat-t_centro INTO DATA(ls_ctr).
     DATA: ls_marcrt  TYPE e1bpe1marcrt,
-          ls_marcrt1 TYPE e1bpe1marcrt1.
-    CLEAR: ls_marcrt, ls_marcrt1.
+          ls_marcrt1 TYPE e1bpe1marcrt1,
+          ls_marcrtx TYPE e1bpe1marcrtx.
+    CLEAR: ls_marcrt, ls_marcrt1, ls_marcrtx.
 
     ls_marcrt-material    = iu_mat-material.
     ls_marcrt-plant       = ls_ctr-centro.
@@ -112,6 +114,7 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `MATERIAL` TO lt_keys.
     APPEND `PLANT` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_marcrt ls_marcrt1.
+    PERFORM mark_changed_fields USING lt_keys CHANGING ls_marcrt ls_marcrtx.
 
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT'.
@@ -121,6 +124,15 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT1'.
     ls_edidd-sdata  = ls_marcrt1.
+    APPEND ls_edidd TO lt_edidd.
+
+    APPEND ls_marcrtx TO lt_marcrtx.
+  ENDLOOP.
+
+  LOOP AT lt_marcrtx INTO ls_marcrtx.
+    CLEAR ls_edidd.
+    ls_edidd-segnam = 'E1BPE1MARCRTX'.
+    ls_edidd-sdata  = ls_marcrtx.
     APPEND ls_edidd TO lt_edidd.
   ENDLOOP.
 
