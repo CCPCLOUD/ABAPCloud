@@ -32,6 +32,22 @@ CONSTANTS:
   gc_no_docnum TYPE edi_docnum VALUE '0000000000000000'.
 
 *----------------------------------------------------------------------
+* Configuracion del interlocutor EDI (TVARVC) para el registro de
+* control del IDoc - mismo patron utilizado en desarrollos previos
+*----------------------------------------------------------------------
+CONSTANTS:
+  gc_tvarvc_tp_int_edi  TYPE tvarvc-name VALUE 'ZTPINTEDIIDOC',
+  gc_tvarvc_n_inter_edi TYPE tvarvc-name VALUE 'ZNINTER.EDIIDOC',
+  gc_tvarvc_puerta      TYPE tvarvc-name VALUE 'ZPUERTAIDDOC'.
+
+DATA:
+  gv_sndprt TYPE edi_dc40-sndprt,
+  gv_rcvprt TYPE edi_dc40-rcvprt,
+  gv_sndprn TYPE edi_dc40-sndprn,
+  gv_rcvprn TYPE edi_dc40-rcvprn,
+  gv_sndpor TYPE edi_dc40-sndpor.
+
+*----------------------------------------------------------------------
 * Estructuras "en crudo" tal cual se leen del Excel (fila 8 en adelante)
 *----------------------------------------------------------------------
 TYPES:

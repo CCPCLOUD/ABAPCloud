@@ -14,9 +14,46 @@
 *&---------------------------------------------------------------------*
 FORM process_idocs USING iu_sim TYPE abap_bool.
 
+  IF iu_sim = abap_false.
+    PERFORM read_edi_partner_config.
+  ENDIF.
+
   LOOP AT git_material_ok INTO DATA(ls_mat).
     PERFORM process_one_material USING ls_mat iu_sim.
   ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  READ_EDI_PARTNER_CONFIG
+*&  Lee de TVARVC (variantes tipo S) el tipo/numero de interlocutor y
+*&  la puerta a usar en el registro de control del IDoc
+*&---------------------------------------------------------------------*
+FORM read_edi_partner_config.
+
+  DATA: lv_tp_int_edi  TYPE tvarvc-low,
+        lv_n_inter_edi TYPE tvarvc-low,
+        lv_puerta      TYPE tvarvc-low.
+
+  SELECT SINGLE low FROM tvarvc INTO lv_tp_int_edi
+    WHERE name = gc_tvarvc_tp_int_edi AND type = 'S'.
+  SELECT SINGLE low FROM tvarvc INTO lv_n_inter_edi
+    WHERE name = gc_tvarvc_n_inter_edi AND type = 'S'.
+  SELECT SINGLE low FROM tvarvc INTO lv_puerta
+    WHERE name = gc_tvarvc_puerta AND type = 'S'.
+
+  gv_sndprt = lv_tp_int_edi.
+  gv_rcvprt = lv_tp_int_edi.
+  gv_sndprn = lv_n_inter_edi.
+  gv_rcvprn = lv_n_inter_edi.
+  gv_sndpor = lv_puerta.
+
+  IF lv_tp_int_edi IS INITIAL OR lv_n_inter_edi IS INITIAL OR lv_puerta IS INITIAL.
+    DATA(lv_msg) = |Falta configurar una o más variantes en TVARVC ({ gc_tvarvc_tp_int_edi }/|
+                && |{ gc_tvarvc_n_inter_edi }/{ gc_tvarvc_puerta }); el registro de control del IDoc quedará incompleto.|.
+    PERFORM add_log USING icon_yellow_light 'Advertencia' gc_sheet_articulos 0
+                          space gc_nivel_material space 'W' lv_msg gc_no_docnum.
+  ENDIF.
 
 ENDFORM.
 
@@ -301,28 +338,20 @@ FORM dispatch_idoc USING it_edidd TYPE STANDARD TABLE
                          iu_mat   TYPE gty_s_material_ok.
 
   DATA: ls_control    TYPE edi_dc40,
-        lv_logsys     TYPE tbdls-logsys,
         lv_no_docnum  TYPE edi_docnum,
         lv_pe_docnum  TYPE edidc-docnum,
         lv_error_flag TYPE edi_help-error_flag.
 
-  CALL FUNCTION 'OWN_LOGICAL_SYSTEM_GET'
-    IMPORTING
-      own_logical_system = lv_logsys
-    EXCEPTIONS
-      OTHERS              = 1.
-
-  " NOTA: interlocutor emisor/receptor pendiente de parametrizar segun
-  " el perfil de interlocutor (WE20) y el sistema logico configurados
-  " para el tipo de mensaje ARTMAS (ver FS 2.1 Dependencias). Por
-  " defecto se autogenera y procesa contra el propio sistema logico.
+  " Interlocutor emisor/receptor y puerta: configurados via TVARVC
+  " (ver READ_EDI_PARTNER_CONFIG), tal como en desarrollos previos.
   ls_control-mestyp = 'ARTMAS'.
   ls_control-idoctp = 'ARTMAS09'.
   ls_control-direct = '2'.               " '2' = IDoc de ENTRADA (inbound)
-  ls_control-sndprt = 'LS'.
-  ls_control-sndprn = lv_logsys.
-  ls_control-rcvprt = 'LS'.
-  ls_control-rcvprn = lv_logsys.
+  ls_control-sndprt = gv_sndprt.
+  ls_control-sndprn = gv_sndprn.
+  ls_control-rcvprt = gv_rcvprt.
+  ls_control-rcvprn = gv_rcvprn.
+  ls_control-sndpor = gv_sndpor.
 
   CALL FUNCTION 'IDOC_INBOUND_SINGLE'
     EXPORTING
