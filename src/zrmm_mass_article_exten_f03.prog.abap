@@ -81,14 +81,13 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   APPEND ls_edidd TO lt_edidd.
 
   "-----------------------------------------------------------------
-  " Ampliacion a centros: primero TODOS los E1BPE1MARCRT, despues
-  " TODOS los E1BPE1MARCRT1 (segmento X) - no intercalados, segun
-  " secuencia de segmentos verificada por el equipo funcional/tecnico
-  " para el tipo base ARTMAS09.
+  " Ampliacion a centros: E1BPE1MARCRT seguido inmediatamente de su
+  " propio E1BPE1MARCRT1 (segmento X). E1BPE1MARCRT1 es hijo directo
+  " de E1BPE1MARCRT con cardinalidad maxima 1 por ocurrencia del
+  " padre, por lo que no pueden agruparse por separado (confirmado
+  " por error E0075 "demasiadas repeticiones de un segmento" al
+  " intentarlo).
   "-----------------------------------------------------------------
-  DATA: lt_marcrt  TYPE STANDARD TABLE OF e1bpe1marcrt,
-        lt_marcrt1 TYPE STANDARD TABLE OF e1bpe1marcrt1.
-
   LOOP AT iu_mat-t_centro INTO DATA(ls_ctr).
     DATA: ls_marcrt  TYPE e1bpe1marcrt,
           ls_marcrt1 TYPE e1bpe1marcrt1.
@@ -114,17 +113,11 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `PLANT` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_marcrt ls_marcrt1.
 
-    APPEND ls_marcrt TO lt_marcrt.
-    APPEND ls_marcrt1 TO lt_marcrt1.
-  ENDLOOP.
-
-  LOOP AT lt_marcrt INTO ls_marcrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT'.
     ls_edidd-sdata  = ls_marcrt.
     APPEND ls_edidd TO lt_edidd.
-  ENDLOOP.
-  LOOP AT lt_marcrt1 INTO ls_marcrt1.
+
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARCRT1'.
     ls_edidd-sdata  = ls_marcrt1.
@@ -132,12 +125,9 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Ampliacion a almacenes: primero TODOS los E1BPE1MARDRT, despues
-  " TODOS los E1BPE1MARDRTX (segmento X, confirmado en WE60).
+  " Ampliacion a almacenes: E1BPE1MARDRT seguido inmediatamente de
+  " su propio E1BPE1MARDRTX (segmento X).
   "-----------------------------------------------------------------
-  DATA: lt_mardrt  TYPE STANDARD TABLE OF e1bpe1mardrt,
-        lt_mardrtx TYPE STANDARD TABLE OF e1bpe1mardrtx.
-
   LOOP AT iu_mat-t_almacen INTO DATA(ls_alm).
     DATA: ls_mardrt  TYPE e1bpe1mardrt,
           ls_mardrtx TYPE e1bpe1mardrtx.
@@ -153,17 +143,11 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `STGE_LOC` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mardrt ls_mardrtx.
 
-    APPEND ls_mardrt TO lt_mardrt.
-    APPEND ls_mardrtx TO lt_mardrtx.
-  ENDLOOP.
-
-  LOOP AT lt_mardrt INTO ls_mardrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRT'.
     ls_edidd-sdata  = ls_mardrt.
     APPEND ls_edidd TO lt_edidd.
-  ENDLOOP.
-  LOOP AT lt_mardrtx INTO ls_mardrtx.
+
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MARDRTX'.
     ls_edidd-sdata  = ls_mardrtx.
@@ -171,12 +155,9 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Datos de valoracion: primero TODOS los E1BPE1MBEWRT, despues
-  " TODOS los E1BPE1MBEWRTX (segmento X).
+  " Datos de valoracion: E1BPE1MBEWRT seguido inmediatamente de su
+  " propio E1BPE1MBEWRTX (segmento X).
   "-----------------------------------------------------------------
-  DATA: lt_mbewrt  TYPE STANDARD TABLE OF e1bpe1mbewrt,
-        lt_mbewrtx TYPE STANDARD TABLE OF e1bpe1mbewrtx.
-
   LOOP AT iu_mat-t_valoracion INTO DATA(ls_val).
     DATA: ls_mbewrt  TYPE e1bpe1mbewrt,
           ls_mbewrtx TYPE e1bpe1mbewrtx.
@@ -195,17 +176,11 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `VAL_AREA` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mbewrt ls_mbewrtx.
 
-    APPEND ls_mbewrt TO lt_mbewrt.
-    APPEND ls_mbewrtx TO lt_mbewrtx.
-  ENDLOOP.
-
-  LOOP AT lt_mbewrt INTO ls_mbewrt.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRT'.
     ls_edidd-sdata  = ls_mbewrt.
     APPEND ls_edidd TO lt_edidd.
-  ENDLOOP.
-  LOOP AT lt_mbewrtx INTO ls_mbewrtx.
+
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MBEWRTX'.
     ls_edidd-sdata  = ls_mbewrtx.
@@ -213,12 +188,9 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
   ENDLOOP.
 
   "-----------------------------------------------------------------
-  " Area de ventas: primero TODOS los E1BPE1MVKERT, despues TODOS
-  " los E1BPE1MVKERTX (segmento X).
+  " Area de ventas: E1BPE1MVKERT seguido inmediatamente de su propio
+  " E1BPE1MVKERTX (segmento X).
   "-----------------------------------------------------------------
-  DATA: lt_mvkert  TYPE STANDARD TABLE OF e1bpe1mvkert,
-        lt_mvkertx TYPE STANDARD TABLE OF e1bpe1mvkertx.
-
   LOOP AT iu_mat-t_ventas INTO DATA(ls_vta).
     DATA: ls_mvkert  TYPE e1bpe1mvkert,
           ls_mvkertx TYPE e1bpe1mvkertx.
@@ -251,17 +223,11 @@ FORM process_one_material USING iu_mat TYPE gty_s_material_ok
     APPEND `DISTR_CHAN` TO lt_keys.
     PERFORM mark_changed_fields USING lt_keys CHANGING ls_mvkert ls_mvkertx.
 
-    APPEND ls_mvkert TO lt_mvkert.
-    APPEND ls_mvkertx TO lt_mvkertx.
-  ENDLOOP.
-
-  LOOP AT lt_mvkert INTO ls_mvkert.
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERT'.
     ls_edidd-sdata  = ls_mvkert.
     APPEND ls_edidd TO lt_edidd.
-  ENDLOOP.
-  LOOP AT lt_mvkertx INTO ls_mvkertx.
+
     CLEAR ls_edidd.
     ls_edidd-segnam = 'E1BPE1MVKERTX'.
     ls_edidd-sdata  = ls_mvkertx.
