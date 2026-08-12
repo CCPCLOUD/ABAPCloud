@@ -76,7 +76,7 @@ FORM build_base_selection.
 * a PERNR), then convert ACCNT to PA0002-PERNR format (a plain MOVE
 * performs the implicit CHAR -> NUMC zero-padding)
   LOOP AT lt_usr02 INTO ls_usr02.
-    IF ls_usr02-accnt IS INITIAL OR ls_usr02-accnt NOT CO '0123456789 '.
+    IF ls_usr02-accnt IS INITIAL OR ls_usr02-accnt CN '0123456789 '.
       DELETE lt_usr02.
     ELSE.
       ls_usr02-pernr = ls_usr02-accnt.
