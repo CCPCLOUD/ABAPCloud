@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 76 76" width="76" height="76" fill="none" stroke="#303538" stroke-width="1" aria-label="Logotipo">
+  <!-- Logotipo provisional: sustitúyelo por el SVG original desde el editor -->
+  <rect x="0.5" y="0.5" width="75" height="75"/>
+  <path d="M32.5 0.5v75M32.5 43.5h43"/>
+  <path d="M34 43.5 49.5 2 62 43.5"/>
+  <path d="M64.5 43.5V22h3.5a6 6 0 0 1 0 12h-3.5"/>
+</svg>
